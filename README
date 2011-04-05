@@ -17,4 +17,29 @@ Puma.operators.unary['@'] = function (elem, right) {
     return elem.getAttribute('name') == right.value;
 };
 
-More documentation on doing this will be available sometime when I get around to it (hopefully within the next few years :-P).
+For it to be usable in a context like 'div@myname' we need to also add it as a binary operator:
+
+Puma.operators.binary['@'] = function (elem, left, right) {
+    return elem.tagName.toUpperCase() == left.value.toUpperCase() &&
+           elem.getAttribute('name') == right.value;
+};
+
+Then you can use it just like the built-in operators:
+
+Puma('@myname'); // Matches all elements with a name of 'myname'.
+Puma('span@myname'); // Matches all span elements with a name of 'myname'.
+Puma('div.myclass@myname'); // Uh-oh! This won't work -- you need to do some
+                            // extra work for more complex expressions to work.
+
+To fix the problem with the last one, you will have to evaluate the left side of the tree.
+
+Puma.operators.binary['@'] = function (elem, left, right, context) {
+    return Puma.operators.arrayFilter(left.evaluate(context), function (e) {
+        return e.getAttribute('name') == right.value;
+    });
+};
+
+Now selectors like 'div.myclass1.myclass2[attr=value]@myname' work just fine.
+
+
+More documentation on extension will be available sometime when I get around to it (hopefully within the next few years :-P).
