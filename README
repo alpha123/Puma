@@ -1,0 +1,20 @@
+0 Regexes
+0 Try-catch blocks
+0 Crazy cross-browser hacks
+
+
+
+Puma is a new, speedy, CSS selector engine. Lightweight and designed to be easily dropped into any library, Puma supports all CSS2 and most CSS3 selectors. It has some notable pseudoclasses missing though (like :nth-child).
+
+It's syntax is just like Sizzle and friends:
+
+Puma(selector[, DOMElement])
+
+
+It's also very extensible: you can add new pseudoclasses or operators any time you want. Let's say we want to define the @ operator to be like the # operator except matching name instead of id:
+
+Puma.operators.unary['@'] = function (elem, right) {
+    return elem.getAttribute('name') == right.value;
+};
+
+More documentation on doing this will be available sometime when I get around to it (hopefully within the next few years :-P).
