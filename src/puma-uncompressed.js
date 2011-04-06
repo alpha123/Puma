@@ -466,6 +466,9 @@ Puma.operators = {
     }
 };
 
+Puma.operators.arrayIndexOf = arrayIndexOf;
+Puma.operators.arrayFilter = arrayFilter;
+
 var POB = Puma.operators.binary, POU = Puma.operators.unary;
 
 POB[','].precendence = POB['>'].precendence = POB[' '].precendence =
@@ -481,7 +484,9 @@ Puma.pseudoclasses = {
     },
     
     'not': function (elem, expr, context) {
-        return arrayIndexOf(expr.evaluate(context), elem) == -1;
+        if (!context.notCache)
+            context.notCache = expr.evaluate(context);
+        return arrayIndexOf(context.notCache, elem) == -1;
     },
     
     'first-child': function (elem) {
@@ -498,8 +503,44 @@ Puma.pseudoclasses = {
         return children.length == 1 && children[0] == elem;
     },
     
-    'nth-child': function (elem, n) {
-        
+    'nth-child': function (elem, expr) {
+        var n = expr.value;
+        if (n == 'n')
+            return true;
+        if (n == 'odd')
+            return arrayIndexOf(elem.parentNode.children, elem) % 2 == 0;
+        if (n == 'even')
+            return arrayIndexOf(elem.parentNode.children, elem) % 2 == 1;
+        if (!expr.nthChildCache) {
+            if (n.length == 1 && n != '+') {
+                expr.nthChildCache = function (e) {
+                    return arrayIndexOf(e.parentNode.children, e) == n - 1;
+                };
+            }
+            else if (n == '+') {
+                expr.nthChildCache = function (e) {
+                    for (var idx = arrayIndexOf(e.parentNode.children, e),
+                    x = parseInt(expr.right.value) - 1,
+                    y = expr.left.value.length > 1 ? parseInt(expr.left.value.length) : 0,
+                    i = 0, l = e.parentNode.children.length; i < l; ++i) {
+                        if (idx == i * y + x)
+                            return true;
+                    }
+                    return false;
+                };
+            }
+            else {
+                expr.nthChildCache = function (e) {
+                    for (var idx = arrayIndexOf(e.parentNode.children, e),
+                    x = parseInt(n), i = 0, l = e.parentNode.children.length; i < l; ++i) {
+                        if (idx == i * x)
+                            return true;
+                    }
+                    return false;
+                };
+            }
+        }
+        return expr.nthChildCache(elem);
     }
 };
 

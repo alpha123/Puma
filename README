@@ -4,7 +4,7 @@
 
 
 
-Puma is a new, speedy, CSS selector engine. Lightweight and designed to be easily dropped into any library, Puma supports all CSS2 and most CSS3 selectors. It has some notable pseudoclasses missing though (like :nth-child).
+Puma is a new, speedy, CSS selector engine. Lightweight and designed to be easily dropped into any library, Puma supports all CSS2 and most CSS3 selectors.
 
 It's syntax is just like Sizzle and friends:
 
