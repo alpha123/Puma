@@ -75,8 +75,9 @@ Puma.Scanner = function (selector) {
             from = i;
             if (current == ' ') {
                 current = selector.charAt(++i);
-                if ((test(current) || Puma.operators.unary[current]) &&
-                test(selector.charAt(i - 2)))
+                var old = selector.charAt(i - 2);
+                if ((test(current) || current == '*' || Puma.operators.unary[current]) &&
+                (test(old) || old == '*'))
                     tokens.push(makeToken('op', ' '));
             }
             else if (test(current)) {
@@ -177,8 +178,9 @@ Puma.Parser = function (selector) {
             token = clone(node);
             token.from = tok.from;
             token.to = tok.to;
-            token.value = val;
+            token.value = token.id = val;
             token.arity = type;
+            token.error = tok.error;
             return token;
         }
         
@@ -531,7 +533,7 @@ Puma.pseudoclasses = {
             }
             else {
                 expr.nthChildCache = function (e) {
-                    for (var idx = arrayIndexOf(e.parentNode.children, e),
+                    for (var idx = arrayIndexOf(e.parentNode.children, e) + 1,
                     x = parseInt(n), i = 0, l = e.parentNode.children.length; i < l; ++i) {
                         if (idx == i * x)
                             return true;
