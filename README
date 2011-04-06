@@ -39,6 +39,8 @@ Puma.operators.binary['@'] = function (elem, left, right, context) {
     });
 };
 
+Puma.operators.binary['@'].noIter = true;
+
 Now selectors like 'div.myclass1.myclass2[attr=value]@myname' work just fine.
 
 
