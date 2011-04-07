@@ -32,7 +32,7 @@ Puma.AST = {
         this.value = value;
         this.right = right;
         this.evaluate = function (context) {
-            var op =  Puma.operators.unary[value], matches = [], elems, i;
+            var op = Puma.operators.unary[value], matches = [], elems, i;
             if (op.noIter)
                 return op(this.right, context);
             elems = context.getElementsByTagName('*');
@@ -152,8 +152,8 @@ Puma.Parser = function (selector) {
                 token = symbols['(end)'];
                 return;
             }
-            var tok = tokens[tokenNum++],
-            val = tok.value, type = tok.type, node, i;
+            var tok = tokens[tokenNum++], val = tok.value, type = tok.type,
+            prevTok = tokens[tokenNum - 2], node, i;
             if (type == 'ident') {
                 node = new Puma.AST.Tag(val);
                 node.nud = function () {
@@ -165,8 +165,8 @@ Puma.Parser = function (selector) {
             else if (type == 'op') {
                 if (!symbols[val])
                     tok.error('Unknown operator ' + val);
-                if (Puma.operators.unary[val] && (!tokens[tokenNum - 2] ||
-                tokens[tokenNum - 2].type == 'op'))
+                if (Puma.operators.unary[val] && (!prevTok ||
+                (prevTok.type == 'op' && prevTok.value != ']' && prevTok.value != ')')))
                     node = new Puma.AST.UnOp(val, tok.first);
                 else
                     node = new Puma.AST.BinOp(val, tok.first, tok.second);
@@ -272,6 +272,13 @@ Puma.Parser = function (selector) {
         for (i in Puma.operators.unary)
             prefix(i);
         
+        prefix('[', function () {
+            this.first = this.right = expression(0);
+            this.arity = 'unary';
+            advance(']');
+            return this;
+        });
+        
         advance();
         result = expression(0);
         advance('(end)');
@@ -304,8 +311,10 @@ function arrayFilter(array, func) {
 Puma.operators = {
     unary: {
         '#': function (right, context) {
-            if (context.getElementById)
-                return [context.getElementById(right.value)];
+            if (context.getElementById) {
+                var elem = context.getElementById(right.value);
+                return elem ? [elem] : [];
+            }
             return arrayFilter(right.evaluate(context), function (e) {
                 return e.id == right.value;
             });
@@ -317,6 +326,14 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 return arrayIndexOf(e.className.split(' '), right.value) != -1;
             });
+        },
+        
+        ':': function (right, context) {
+            return Puma.operators.binary[':'](new Puma.AST.Tag('*'), right, context);
+        },
+        
+        '[': function (right, context) {
+            return Puma.operators.binary['['](new Puma.AST.Tag('*'), right, context);
         }
     },
     
@@ -478,17 +495,19 @@ POB['+'].precendence = POB['~'].precendence = 8;
 
 POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
 POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
-POB['['].noIter = POU['#'].noIter = POU['.'].noIter = true;
+POB['['].noIter = POU['#'].noIter = POU['.'].noIter = POU[':'].noIter =
+POU['['].noIter = true;
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
-        return (elem.innerText || elem.textContent).indexOf(text.value) != -1;
+        return (typeof elem.innerText != 'undefined' ? elem.innerText :
+        elem.textContent).indexOf(text.value) != -1;
     },
     
     'not': function (elem, expr, context) {
-        if (!context.notCache)
-            context.notCache = expr.evaluate(context);
-        return arrayIndexOf(context.notCache, elem) == -1;
+        if (!expr.notCache)
+            expr.notCache = expr.evaluate(context);
+        return arrayIndexOf(expr.notCache, elem) == -1;
     },
     
     'first-child': function (elem) {
