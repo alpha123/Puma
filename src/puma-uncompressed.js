@@ -511,17 +511,18 @@ Puma.pseudoclasses = {
     },
     
     'first-child': function (elem) {
-        return elem == elem.parentNode.children[0];
+        var children = elem.parentNode.children;
+        return children && elem == elem.parentNode.children[0];
     },
     
     'last-child': function (elem) {
         var children = elem.parentNode.children;
-        return elem == children[children.length - 1];
+        return children && elem == children[children.length - 1];
     },
     
     'only-child': function (elem) {
         var children = elem.parentNode.children;
-        return children.length == 1 && children[0] == elem;
+        return children && children.length == 1 && children[0] == elem;
     },
     
     'nth-child': function (elem, expr) {
