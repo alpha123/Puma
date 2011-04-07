@@ -473,14 +473,6 @@ Puma.operators = {
                 var attr = e.getAttribute(left.value);
                 return attr && arrayIndexOf(attr.split(' '), right.value) != -1;
             });
-        },
-        
-        '|=': function (nodes, left, right) { // Tell me, WHY do we have this selector?
-            return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
-                return attr && (attr.indexOf(right.value) != -1 ||
-                attr.indexOf(right.value + '-') != -1);
-            });
         }
     }
 };
