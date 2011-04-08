@@ -332,6 +332,10 @@ Puma.operators = {
             return Puma.operators.binary[':'](new Puma.AST.Tag('*'), right, context);
         },
         
+        '::': function (right, context) {
+            return Puma.operators.binary['::'](new Puma.AST.Tag('*'), right, context);
+        },
+        
         '[': function (right, context) {
             return Puma.operators.binary['['](new Puma.AST.Tag('*'), right, context);
         }
@@ -506,7 +510,7 @@ POB['+'].precendence = POB['~'].precendence = 8;
 POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
 POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
 POB['::'].noIter = POB['['].noIter = POU['#'].noIter = POU['.'].noIter =
-POU[':'].noIter = POU['['].noIter = true;
+POU[':'].noIter = POU['::'].noIter = POU['['].noIter = true;
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
