@@ -408,6 +408,8 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var sibling = e;
                 while (sibling = sibling.previousSibling) {
+                    if (sibling.nodeType != 1)
+                        continue;
                     if (arrayIndexOf(leftNodes, sibling) != -1)
                         return true;
                 }
@@ -417,11 +419,27 @@ Puma.operators = {
         
         ':': function (left, right, context) {
             var pseudos = Puma.pseudoclasses;
+            if (!pseudos[right.value] && !pseudos[right.left.value])
+                right.error('Unknown pseudoclass ' + (right.left ?
+                right.left.value : right.value));
             return arrayFilter(left.evaluate(context), function (e) {
                 if (right.value == '(')
                     return pseudos[right.left.value](e, right.right, context);
                 return pseudos[right.value](e);
             });
+        },
+        
+        '::': function (left, right, context) {
+            var pseudos = Puma.pseudoelements, leftNodes, i = 0, l, result = [],
+            pseudoelement;
+            if (!pseudos[right.value])
+                right.error('Unknown pseudoelement ' + right.value);
+            for (leftNodes = left.evaluate(context), l = leftNodes.length; i < l; ++i) {
+                pseudoelement = pseudos[right.value](leftNodes[i]);
+                if (pseudoelement != null)
+                    result.push.apply(result, pseudoelement);
+            }
+            return result;
         },
         
         '[': function (left, right, context) {
@@ -487,13 +505,12 @@ POB['+'].precendence = POB['~'].precendence = 8;
 
 POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
 POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
-POB['['].noIter = POU['#'].noIter = POU['.'].noIter = POU[':'].noIter =
-POU['['].noIter = true;
+POB['::'].noIter = POB['['].noIter = POU['#'].noIter = POU['.'].noIter =
+POU[':'].noIter = POU['['].noIter = true;
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
-        return (typeof elem.innerText != 'undefined' ? elem.innerText :
-        elem.textContent).indexOf(text.value) != -1;
+        return (elem.innerText || elem.textContent || '').indexOf(text.value) != -1;
     },
     
     'not': function (elem, expr, context) {
@@ -555,6 +572,27 @@ Puma.pseudoclasses = {
             }
         }
         return expr.nthChildCache(elem);
+    }
+};
+
+Puma.pseudoelements = {
+    createPseudoElement: function (name, text, elem, elemType) {
+        elemType = (elemType || 'span');
+        for (var textArray = (elem.innerText || elem.textContent || '').split(text),
+        className = '-puma-pseudoelement-' + name, i = 0, l = textArray.length - 1; i < l; ++i)
+            textArray[i] = [textArray[i], '<', elemType, ' class="', className, '">', text,
+            '</', elemType, '>'].join('');
+        elem.innerHTML = textArray.join('');
+        return arrayFilter(elem.getElementsByTagName(elemType), function (e) {
+            return arrayIndexOf(e.className.split(' '), className) != -1;
+        });
+    },
+    
+    'first-letter': function (elem) {
+        var innerText = elem.innerText || elem.textContent;
+        if (!innerText)
+            return [];
+        return this.createPseudoElement('first-letter', innerText.charAt(0), elem);
     }
 };
 
