@@ -333,7 +333,7 @@ Puma.operators = {
         },
         
         '::': function (right, context) {
-            return Puma.operators.binary['::'](new Puma.AST.Tag('body'), right, context);
+            return Puma.operators.binary['::'](new Puma.AST.Tag('*'), right, context);
         },
         
         '[': function (right, context) {
@@ -582,7 +582,7 @@ Puma.pseudoclasses = {
 Puma.pseudoelements = {
     createPseudoElement: function (name, text, elem, max, elemType) {
         elemType = (elemType || 'span');
-        for (var textArray = (elem.innerText || elem.textContent || '').split(text),
+        for (var textArray = elem.innerHTML.split(text),
         className = '-puma-pseudoelement-' + name, i = 0, l = textArray.length - 1,
         max = max || l; i < max; ++i)
             textArray[i] = [textArray[i], '<', elemType, ' class="', className, '">', text,
@@ -594,11 +594,8 @@ Puma.pseudoelements = {
     },
     
     'first-letter': function (elem) {
-        var innerText = elem.innerText || elem.textContent
-        if (!innerText)
-            return [];
-        if (arrayIndexOf(['INPUT', 'SELECT', 'OPTION', 'BUTTON'],
-        elem.tagName.toUpperCase()) != -1)
+        var innerText = elem.innerText || elem.textContent;
+        if (!innerText || elem.parentNode == elem.ownerDocument.getElementsByTagName('head')[0])
             return [];
         return this.createPseudoElement('first-letter', innerText.charAt(0), elem, 1);
     }
