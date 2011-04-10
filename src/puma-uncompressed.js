@@ -400,11 +400,8 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var sibling = e;
                 while (sibling = sibling.previousSibling) {
-                    if (sibling.nodeType != 1)
-                        continue;
-                    if (arrayIndexOf(leftNodes, sibling) >= 0)
-                        return true;
-                    return false;
+                    if (sibling.nodeType == 1)
+                        return arrayIndexOf(leftNodes, sibling) >= 0;
                 }
             });
         },
