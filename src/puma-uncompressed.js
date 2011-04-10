@@ -69,7 +69,7 @@ Puma.Scanner = function (selector) {
         }
         function test(character) {
             return ((character >= 'a' && character <= 'z') || (character >= 'A'
-            && character <= 'Z') || chars.indexOf(character) != -1) && character;
+            && character <= 'Z') || chars.indexOf(character) >= 0) && character;
         }
         while (current) {
             from = i;
@@ -324,7 +324,7 @@ Puma.operators = {
             if (context.getElementsByClassName)
                 return [].slice.call(context.getElementsByClassName(right.value));
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return arrayIndexOf(e.className.split(' '), right.value) != -1;
+                return arrayIndexOf(e.className.split(' '), right.value) >= 0;
             });
         },
         
@@ -346,13 +346,13 @@ Puma.operators = {
             var leftNodes = left.evaluate(context), elem;
             if (context.getElementById) {
                 elem = context.getElementById(right.value);
-                if (arrayIndexOf(leftNodes, elem) != -1)
+                if (arrayIndexOf(leftNodes, elem) >= 0)
                     return [elem];
                 else
                     return [];
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return e.id == right.value && arrayIndexOf(leftNodes, e) != -1;
+                return e.id == right.value && arrayIndexOf(leftNodes, e) >= 0;
             });
         },
         
@@ -361,12 +361,12 @@ Puma.operators = {
             if (context.getElementsByClassName) {
                 return arrayFilter(context.getElementsByClassName(right.value),
                 function (e) {
-                    return arrayIndexOf(leftNodes, e) != -1;
+                    return arrayIndexOf(leftNodes, e) >= 0;
                 });
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return arrayIndexOf(e.className.split(' '), right.value) != -1 &&
-                arrayIndexOf(leftNodes, e) != -1;
+                return arrayIndexOf(e.className.split(' '), right.value) >= 0 &&
+                arrayIndexOf(leftNodes, e) >= 0;
             });
         },
         
@@ -379,7 +379,7 @@ Puma.operators = {
         '>': function (left, right, context) {
             var leftNodes = left.evaluate(context);
             return arrayFilter(right.evaluate(context), function (e) {
-                return arrayIndexOf(leftNodes, e.parentNode) != -1;
+                return arrayIndexOf(leftNodes, e.parentNode) >= 0;
             });
         },
         
@@ -388,7 +388,7 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var parent = e;
                 while (parent = parent.parentNode) {
-                    if (arrayIndexOf(leftNodes, parent) != -1)
+                    if (arrayIndexOf(leftNodes, parent) >= 0)
                         return true;
                 }
                 return false;
@@ -402,7 +402,7 @@ Puma.operators = {
                 while (sibling = sibling.previousSibling) {
                     if (sibling.nodeType != 1)
                         continue;
-                    if (arrayIndexOf(leftNodes, sibling) != -1)
+                    if (arrayIndexOf(leftNodes, sibling) >= 0)
                         return true;
                     return false;
                 }
@@ -416,7 +416,7 @@ Puma.operators = {
                 while (sibling = sibling.previousSibling) {
                     if (sibling.nodeType != 1)
                         continue;
-                    if (arrayIndexOf(leftNodes, sibling) != -1)
+                    if (arrayIndexOf(leftNodes, sibling) >= 0)
                         return true;
                 }
                 return false;
@@ -488,14 +488,14 @@ Puma.operators = {
         '*=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
                 var attr = e.getAttribute(left.value);
-                return attr && attr.indexOf(right.value) != -1;
+                return attr && attr.indexOf(right.value) >= 0;
             });
         },
         
         '~=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
                 var attr = e.getAttribute(left.value);
-                return attr && arrayIndexOf(attr.split(' '), right.value) != -1;
+                return attr && arrayIndexOf(attr.split(' '), right.value) >= 0;
             });
         }
     }
@@ -516,13 +516,13 @@ POU[':'].noIter = POU['::'].noIter = POU['['].noIter = true;
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
-        return (elem.innerText || elem.textContent || '').indexOf(text.value) != -1;
+        return (elem.innerText || elem.textContent || '').indexOf(text.value) >= 0;
     },
     
     'not': function (elem, expr, context) {
         if (!expr.notCache)
             expr.notCache = expr.evaluate(context);
-        return arrayIndexOf(expr.notCache, elem) != -1;
+        return arrayIndexOf(expr.notCache, elem) >= 0;
     },
     
     'first-child': function (elem) {
@@ -593,7 +593,7 @@ Puma.pseudoelements = {
         if (elem.getElementsByClassName)
             return [].slice.call(elem.getElementsByClassName(className));
         return arrayFilter(elem.getElementsByTagName(elemType), function (e) {
-            return arrayIndexOf(e.className.split(' '), className) != -1;
+            return arrayIndexOf(e.className.split(' '), className) >= 0;
         });
     },
     
