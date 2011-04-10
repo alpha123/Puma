@@ -308,6 +308,15 @@ function arrayFilter(array, func) {
     return newArray;
 }
 
+function splitStringAtIndex() {
+    var result = [], args = arguments, string = args[0], i = 1, l, currPoss = 0;
+    for (args[args.length] = string.length, l = args.length; i <= l; ++i) {
+        result.push(string.substring(currPoss, args[i]));
+        currPoss = args[i];
+    }
+    return result;
+}
+
 Puma.operators = {
     unary: {
         '#': function (right, context) {
@@ -577,14 +586,15 @@ Puma.pseudoclasses = {
 };
 
 Puma.pseudoelements = {
-    createPseudoElement: function (name, text, elem, max, elemType) {
-        elemType = (elemType || 'span');
-        for (var textArray = elem.innerHTML.split(text),
-        className = '-puma-pseudoelement-' + name, i = 0, l = textArray.length - 1,
-        max = max || l; i < max; ++i)
-            textArray[i] = [textArray[i], '<', elemType, ' class="', className, '">', text,
-            '</', elemType, '>'].join('');
-        elem.innerHTML = textArray.join('');
+    createPseudoElement: function (name, elem, from, to, shift, elemType) {
+        elemType = elemType || 'span';
+        var split = splitStringAtIndex(elem.innerHTML, from, to),
+        className = '-puma-pseudoelement-' + name;
+        if (shift)
+            split.shift();
+        split.splice(from, 0, ['<', elemType, ' class="', className, '">'].join(''));
+        split.splice(to + (shift ? 1 : 0), 0, ['</', elemType, '>'].join(''));
+        elem.innerHTML = split.join('');
         if (elem.getElementsByClassName)
             return [].slice.call(elem.getElementsByClassName(className));
         return arrayFilter(elem.getElementsByTagName(elemType), function (e) {
@@ -596,7 +606,7 @@ Puma.pseudoelements = {
         var innerText = elem.innerText || elem.textContent;
         if (!innerText || elem.parentNode == elem.ownerDocument.getElementsByTagName('head')[0])
             return [];
-        return this.createPseudoElement('first-letter', innerText.charAt(0), elem, 1);
+        return this.createPseudoElement('first-letter', elem, 0, 1, true);
     }
 };
 
