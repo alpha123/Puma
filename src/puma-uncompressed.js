@@ -315,7 +315,7 @@ Puma.operators = {
                 var elem = context.getElementById(right.value);
                 return elem ? [elem] : [];
             }
-            return arrayFilter(right.evaluate(context), function (e) {
+            return arrayFilter(context.getElementsByTagName('*'), function (e) {
                 return e.id == right.value;
             });
         },
@@ -323,7 +323,7 @@ Puma.operators = {
         '.': function (right, context) {
             if (context.getElementsByClassName)
                 return [].slice.call(context.getElementsByClassName(right.value));
-            return arrayFilter(right.evaluate(context), function (e) {
+            return arrayFilter(context.getElementsByTagName('*'), function (e) {
                 return arrayIndexOf(e.className.split(' '), right.value) != -1;
             });
         },
@@ -343,28 +343,30 @@ Puma.operators = {
     
     binary: {
         '#': function (left, right, context) {
+            var leftNodes = left.evaluate(context), elem;
             if (context.getElementById) {
-                var elem = context.getElementById(right.value);
-                if (elem.tagName.toUpperCase() == left.value.toUpperCase())
+                elem = context.getElementById(right.value);
+                if (arrayIndexOf(leftNodes, elem) != -1)
                     return [elem];
+                else
+                    return [];
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return e.id == right.value && e.tagName.toUpperCase() == right.value.toUpperCase();
+                return e.id == right.value && arrayIndexOf(leftNodes, e) != -1;
             });
         },
         
         '.': function (left, right, context) {
+            var leftNodes = left.evaluate(context);
             if (context.getElementsByClassName) {
-                var elems = context.getElementsByClassName(right.value), filter =
-                arrayFilter(elems, function (e) {
-                    return e.tagName.toUpperCase() == left.value.toUpperCase();
+                return arrayFilter(context.getElementsByClassName(right.value),
+                function (e) {
+                    return arrayIndexOf(leftNodes, e) != -1;
                 });
-                if (filter.length)
-                    return filter;
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return arrayIndexOf(e.className.split(' '), right.value) != -1
-                && e.tagName.toUpperCase() == left.value.toUpperCase();
+                return arrayIndexOf(e.className.split(' '), right.value) != -1 &&
+                arrayIndexOf(leftNodes, e) != -1;
             });
         },
         
@@ -520,7 +522,7 @@ Puma.pseudoclasses = {
     'not': function (elem, expr, context) {
         if (!expr.notCache)
             expr.notCache = expr.evaluate(context);
-        return arrayIndexOf(expr.notCache, elem) == -1;
+        return arrayIndexOf(expr.notCache, elem) != -1;
     },
     
     'first-child': function (elem) {
@@ -588,6 +590,8 @@ Puma.pseudoelements = {
             textArray[i] = [textArray[i], '<', elemType, ' class="', className, '">', text,
             '</', elemType, '>'].join('');
         elem.innerHTML = textArray.join('');
+        if (elem.getElementsByClassName)
+            return [].slice.call(elem.getElementsByClassName(className));
         return arrayFilter(elem.getElementsByTagName(elemType), function (e) {
             return arrayIndexOf(e.className.split(' '), className) != -1;
         });
