@@ -510,8 +510,10 @@ Puma.operators.arrayFilter = arrayFilter;
 
 var POB = Puma.operators.binary, POU = Puma.operators.unary;
 
-POB[','].precendence = POB['>'].precendence = POB[' '].precendence =
-POB['+'].precendence = POB['~'].precendence = 8;
+POB['>'].precendence = POB[' '].precendence = POB['+'].precendence =
+POB['~'].precendence = 8;
+
+POB[','].precendence = 5;
 
 POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
 POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
