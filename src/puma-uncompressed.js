@@ -380,8 +380,12 @@ Puma.operators = {
         },
         
         ',': function (left, right, context) {
-            var leftNodes = left.evaluate(context);
-            leftNodes.push.apply(leftNodes, right.evaluate(context));
+            var leftNodes = left.evaluate(context), rightNodes = right.evaluate(context);
+            i = 0, l = rightNodes.length;
+            for (; i < l; ++i) {
+                if (arrayIndexOf(leftNodes, rightNodes[i]) < 0)
+                    leftNodes.push(rightNodes[i]);
+            }
             return leftNodes;
         },
         
