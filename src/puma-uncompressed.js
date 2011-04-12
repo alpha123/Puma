@@ -536,7 +536,7 @@ Puma.pseudoclasses = {
     'not': function (elem, expr, context) {
         if (!expr.notCache)
             expr.notCache = expr.evaluate(context);
-        return arrayIndexOf(expr.notCache, elem) >= 0;
+        return arrayIndexOf(expr.notCache, elem) < 0;
     },
     
     'first-child': function (elem) {
