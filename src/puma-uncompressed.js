@@ -167,9 +167,9 @@ Puma.Parser = function (selector) {
                     tok.error('Unknown operator ' + val);
                 if (Puma.operators.unary[val] && (!prevTok ||
                 (prevTok.type == 'op' && prevTok.value != ']' && prevTok.value != ')')))
-                    node = new Puma.AST.UnOp(val, tok.first);
+                    node = new Puma.AST.UnOp(val, tok.right);
                 else
-                    node = new Puma.AST.BinOp(val, tok.first, tok.second);
+                    node = new Puma.AST.BinOp(val, tok.right, tok.left);
                 for (i in symbols[val])
                     node[i] = symbols[val][i];
             }
@@ -228,8 +228,8 @@ Puma.Parser = function (selector) {
         function infix(id, bindingPower, led) {
             var sym = symbol(id, bindingPower);
             sym.led = led || function (left) {
-                this.first = this.left = left;
-                this.second = this.right = expression(bindingPower);
+                this.left = left;
+                this.right = expression(bindingPower);
                 this.arity = 'binary';
                 return this;
             };
@@ -239,7 +239,7 @@ Puma.Parser = function (selector) {
         function prefix(id, nud) {
             var sym = symbol(id);
             sym.nud = nud || function () {
-                this.first = this.right = expression(10);
+                this.right = expression(10);
                 this.arity = 'unary';
                 return this;
             };
@@ -254,16 +254,16 @@ Puma.Parser = function (selector) {
             infix(i, Puma.operators.binary[i].precendence || 10);
         
         infix('[', 20, function (left) {
-            this.first = this.left = left;
-            this.second = this.right = expression(0);
+            this.left = left;
+            this.right = expression(0);
             this.arity = 'binary';
             advance(']');
             return this;
         });
         
         infix('(', 20, function (left) {
-            this.first = this.left = left;
-            this.second = this.right = expression(0);
+            this.left = left;
+            this.right = expression(0);
             this.arity = 'binary';
             advance(')');
             return this;
@@ -273,7 +273,7 @@ Puma.Parser = function (selector) {
             prefix(i);
         
         prefix('[', function () {
-            this.first = this.right = expression(0);
+            this.right = expression(0);
             this.arity = 'unary';
             advance(']');
             return this;
