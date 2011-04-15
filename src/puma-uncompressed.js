@@ -380,9 +380,9 @@ Puma.operators = {
         },
         
         ',': function (left, right, context) {
-            var leftNodes = left.evaluate(context), rightNodes = right.evaluate(context);
-            i = 0, l = rightNodes.length;
-            for (; i < l; ++i) {
+            for (var leftNodes = left.evaluate(context),
+            rightNodes = right.evaluate(context), i = 0, l = rightNodes.length;
+            i < l; ++i) {
                 if (arrayIndexOf(leftNodes, rightNodes[i]) < 0)
                     leftNodes.push(rightNodes[i]);
             }
@@ -497,13 +497,6 @@ Puma.operators = {
             return arrayFilter(nodes, function (e) {
                 var attr = e.getAttribute(left.value);
                 return attr && attr.indexOf(right.value) >= 0;
-            });
-        },
-        
-        '~=': function (nodes, left, right) {
-            return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
-                return attr && arrayIndexOf(attr.split(' '), right.value) >= 0;
             });
         }
     }
