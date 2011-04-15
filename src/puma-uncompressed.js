@@ -542,11 +542,6 @@ Puma.pseudoclasses = {
         return children && elem == children[children.length - 1];
     },
     
-    'only-child': function (elem) {
-        var children = elem.parentNode.children;
-        return children && children.length == 1 && children[0] == elem;
-    },
-    
     'nth-child': function (elem, expr) {
         var n = expr.value;
         if (n == 'n')
