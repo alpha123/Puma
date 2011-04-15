@@ -380,16 +380,18 @@ Puma.operators = {
         },
         
         ',': function (left, right, context) {
-            var leftNodes = left.evaluate(context), result = [], i = 0, j, l, m;
-            leftNodes.push.apply(leftNodes, right.evaluate(context));
-            OUTER: for (l = leftNodes.length; i < l; ++i) {
-                for (j = 0, m = result.length; j < m; ++j) {
-                    if (result[j] == leftNodes[i])
+            var leftNodes = left.evaluate(context),
+            rightNodes = right.evaluate(context), added = [], i = 0, j,
+            l = rightNodes.length, m;
+            OUTER: for (; i < l; ++i) {
+                for (j = 0, m = added.length; j < m; ++j) {
+                    if (added[j] == rightNodes[i])
                         continue OUTER;
                 }
-                result.push(leftNodes[i]);
+                added.push(rightNodes[i]);
+                leftNodes.push(rightNodes[i]);
             }
-            return result;
+            return leftNodes;
         },
         
         '>': function (left, right, context) {
