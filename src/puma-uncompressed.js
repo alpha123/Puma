@@ -1,5 +1,5 @@
 function Puma(selector, context) {
-    return (new Puma.Parser(selector)).parse().evaluate(context || document);
+    return Puma.Parser.parse(selector).evaluate(context || document);
 }
 
 Puma.AST = {
@@ -51,8 +51,8 @@ Puma.AST = {
 // "Top Down Operator Precendence"
 // http://javascript.crockford.com/tdop/tdop.html
 
-Puma.Scanner = function (selector) {
-    this.scan = function () {
+Puma.Scanner = {
+    tokenize: function (selector) {
         var current = selector.charAt(0), i = 0, from, str, oper,
         length = selector.length, tokens = [], chars = '0123456789-_';
     
@@ -130,12 +130,12 @@ Puma.Scanner = function (selector) {
             }
         }
         return tokens;
-    };
+    }
 };
 
-Puma.Parser = function (selector) {
-    this.parse = function () {
-        var symbols = {}, token, tokens = (new Puma.Scanner(selector)).scan(),
+Puma.Parser = {
+    parse: function (selector) {
+        var symbols = {}, token, tokens = Puma.Scanner.tokenize(selector),
         tokenNum = 0, result, i;
         
         function clone(obj) {
@@ -283,7 +283,7 @@ Puma.Parser = function (selector) {
         result = expression(0);
         advance('(end)');
         return result;
-    };
+    }
 };
 
 (function () {
