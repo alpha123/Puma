@@ -418,8 +418,7 @@ Puma.operators = {
         ':': function (left, right, context) {
             var pseudos = Puma.pseudoclasses;
             if (!pseudos[right.value] && !pseudos[right.left.value])
-                right.error('Unknown pseudoclass ' + (right.left ?
-                right.left.value : right.value));
+                right.error('Unknown pseudoclass ' + (right.value != '(' ? right.value : right.left.value));
             return arrayFilter(left.evaluate(context), function (e) {
                 if (right.value == '(')
                     return pseudos[right.left.value](e, right.right, context);
@@ -481,6 +480,13 @@ Puma.operators = {
             return arrayFilter(nodes, function (e) {
                 var attr = e.getAttribute(left.value);
                 return attr && attr.indexOf(right.value) >= 0;
+            });
+        },
+        
+        '@=': function (nodes, left, right) {
+            return arrayFilter(nodes, function (e) {
+                var attr = e.getAttribute(left.value);
+                return attr && (new RegExp(right.value)).test(attr);
             });
         }
     }
