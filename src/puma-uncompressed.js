@@ -308,15 +308,6 @@ function arrayFilter(array, func) {
     return newArray;
 }
 
-function splitStringAtIndex() {
-    var result = [], args = arguments, string = args[0], i = 1, l, currPoss = 0;
-    for (args[args.length] = string.length, l = args.length; i <= l; ++i) {
-        result.push(string.substring(currPoss, args[i]));
-        currPoss = args[i];
-    }
-    return result;
-}
-
 Puma.operators = {
     unary: {
         '#': function (right, context) {
