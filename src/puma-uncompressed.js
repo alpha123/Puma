@@ -138,13 +138,6 @@ Puma.Parser = {
         var symbols = {}, token, tokens = Puma.Scanner.tokenize(selector),
         tokenNum = 0, result, i;
         
-        function clone(obj) {
-            var newObj = {}, i;
-            for (i in obj)
-                newObj[i] = obj[i];
-            return newObj;
-        }
-        
         function advance(id) {
             if (id && token.id != id)
                 token.error('Expected ' + id + ', not ' + token.id);
@@ -175,7 +168,7 @@ Puma.Parser = {
             }
             else
                 tok.error('Unexpected token ' + val);
-            token = clone(node);
+            token = node;
             token.from = tok.from;
             token.to = tok.to;
             token.value = token.id = val;
