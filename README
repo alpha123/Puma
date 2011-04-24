@@ -1,6 +1,6 @@
 0 Regexes
 0 Try-catch blocks
-0 Crazy cross-browser hacks
+0 Browser stiffing
 
 
 
@@ -34,7 +34,7 @@ Puma('div.myclass@myname'); // Uh-oh! This won't work -- you need to do some
 To fix the problem with the last one, you will have to evaluate the left side of the tree.
 
 Puma.operators.binary['@'] = function (left, right, context) {
-    return Puma.operators.arrayFilter(left.evaluate(context), function (e) {
+    return Puma.arrayFilter(left.evaluate(context), function (e) {
         return e.getAttribute('name') == right.value;
     });
 };
