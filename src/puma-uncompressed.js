@@ -6,7 +6,10 @@ Puma.AST = {
     Tag: function (value) {
         this.value = value;
         this.evaluate = function (context) {
-            return [].slice.call(context.getElementsByTagName(value));
+            var result = context.getElementsByTagName(value);
+            if (result instanceof Object)
+                return [].slice.call(result);
+            return Puma.arrayFilter(result, function () { return true; });
         };
     },
     
@@ -301,6 +304,9 @@ function arrayFilter(array, func) {
     return newArray;
 }
 
+Puma.arrayIndexOf = arrayIndexOf;
+Puma.arrayFilter = arrayFilter;
+
 Puma.operators = {
     unary: {
         '#': function (right, context) {
@@ -491,9 +497,6 @@ Puma.operators = {
         }
     }
 };
-
-Puma.operators.arrayIndexOf = arrayIndexOf;
-Puma.operators.arrayFilter = arrayFilter;
 
 var POB = Puma.operators.binary, POU = Puma.operators.unary;
 
