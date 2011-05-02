@@ -1,6 +1,21 @@
 function Puma(selector, context) {
-    return Puma.Parser.parse(selector).evaluate(context || document);
+    var pc = Puma.parseCache, tree, item;
+    if (pc[selector])
+        tree = pc[selector];
+    else {
+        tree = Puma.Parser.parse(selector);
+        pc[selector] = tree;
+        pc.push(selector);
+        if (pc.length > Puma.parseCacheSize) {
+            item = pc.shift();
+            pc[item] = void 0;
+        }
+    }
+    return tree.evaluate(context || document);
 }
+
+Puma.parseCache = [];
+Puma.parseCacheSize = 100;
 
 Puma.AST = {
     Tag: function (value) {
