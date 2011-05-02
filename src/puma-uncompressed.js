@@ -278,6 +278,8 @@ Puma.Parser = {
         advance();
         result = expression(0);
         advance('(end)');
+        result.query = selector;
+        result.tokens = tokens;
         return result;
     }
 };
