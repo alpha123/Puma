@@ -505,9 +505,11 @@ Puma.operators = {
         },
         
         '@=': function (nodes, left, right) {
+            var parts = right.value.split('/');
+            if (parts.length == 1)
+              parts = [0, parts[0], ''];
             return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
-                return attr && (new RegExp(right.value)).test(attr);
+                return (new RegExp(parts[1], parts[2])).test(e.getAttribute(left.value));
             });
         }
     }
@@ -534,6 +536,8 @@ Puma.pseudoclasses = {
     
     'matches': function (elem, regex) {
         var parts = regex.value.split('/');
+        if (parts.length == 1)
+            parts = [0, parts[0], ''];
         return (new RegExp(parts[1], parts[2])).test(elem.innerText || elem.textContent || '');
     },
     
