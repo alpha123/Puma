@@ -527,11 +527,14 @@ POU[':'].noIter = POU['::'].noIter = POU['['].noIter = true;
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
-        text = text.value;
         var innerText = elem.innerText || elem.textContent || '';
-        if (text.indexOf('/') == 0 && text.lastIndexOf('/') == text.length - 1)
-            return (new RegExp(text.substring(1, text.length - 1))).test(innerText);
-        return innerText.indexOf(text) >= 0;
+        return innerText.indexOf(text.value) >= 0;
+    },
+    
+    
+    'matches': function (elem, regex) {
+        var parts = regex.value.split('/');
+        return (new RegExp(parts[1], parts[2])).test(elem.innerText || elem.textContent || '');
     },
     
     'not': function (elem, expr, context) {
