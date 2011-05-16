@@ -395,7 +395,7 @@ Puma.operators = {
         
         ':': function (left, right, context) {
             var pseudos = Puma.pseudoclasses;
-            if (!pseudos[right.value] && !pseudos[right.left.value])
+            if (!pseudos[right.value] && !right.left || (right.left && !pseudos[right.left.value]))
                 right.error('Unknown pseudoclass ' + (right.value != '(' ? right.value : right.left.value));
             return arrayFilter(left.evaluate(context), function (e) {
                 if (right.value == '(')
