@@ -229,13 +229,14 @@ Puma.Parser = {
             return sym;
         }
         
-        function prefix(id, nud) {
+        function prefix(id, nud, bindingPower) {
             var sym = symbol(id);
             sym.nud = nud || function () {
-                this.right = expression(10);
+                this.right = expression(bindingPower || 10);
                 this.arity = 'unary';
                 return this;
             };
+            return sym;
         }
 
         symbol(']');
@@ -243,38 +244,36 @@ Puma.Parser = {
         symbol('(end)');
         symbol('(ident)');
         
-        for (i in POB) {
-            if (POB.hasOwnProperty(i))
-                infix(i, POB[i].precedence || 10);
+        function ledNud(obj, op) {
+            obj.right = expression(op.matches ? op.matchPrecedence || 0 : op.precedence || 10);
+            if (op.matches)
+                advance(op.matches);
         }
         
-        infix('[', 20, function (left) {
-            this.left = left;
-            this.right = expression(0);
-            this.arity = 'binary';
-            advance(']');
-            return this;
-        });
-        
-        infix('(', 20, function (left) {
-            this.left = left;
-            this.right = expression(0);
-            this.arity = 'binary';
-            advance(')');
-            return this;
-        });
+        for (i in POB) {
+            if (POB.hasOwnProperty(i)) {
+                (function (op) {
+                    infix(i, op.precedence || 10, function (left) {
+                        this.left = left;
+                        this.arity = 'binary';
+                        ledNud(this, op);
+                        return this;
+                    });
+                })(POB[i]);
+            }
+        }
         
         for (i in POU) {
-            if (POU.hasOwnProperty(i))
-                prefix(i);
+            if (POU.hasOwnProperty(i)) {
+                (function (op) {
+                    prefix(i, function () {
+                        this.arity = 'unary';
+                        ledNud(this, op);
+                        return this;
+                    });
+                })(POU[i]);
+            }
         }
-        
-        prefix('[', function () {
-            this.right = expression(0);
-            this.arity = 'unary';
-            advance(']');
-            return this;
-        });
         
         advance();
         result = expression(0);
@@ -404,6 +403,8 @@ Puma.operators = {
             });
         },
         
+        '(': function () { },
+        
         '::': function (left, right, context) {
             var pseudos = Puma.pseudoelements, leftNodes, i = 0, l, result = [],
             pseudoelement;
@@ -474,10 +475,12 @@ Puma.operators = {
 
 var POB = Puma.operators.binary, POU = Puma.operators.unary, i;
 
-POB['>'].precendence = POB[' '].precendence = POB['+'].precendence =
-POB['~'].precendence = 8;
-
+POB['('].precedence = POB['['].precedence = 20;
+POB['>'].precendence = POB[' '].precendence = POB['+'].precendence = POB['~'].precendence = 8;
 POB[','].precendence = 5;
+POB['('].matches = ')';
+POB['['].matches = ']';
+POB['('].matchPrecedence = POB['['].matchPrecedence = 0;
 
 function unaryOp(op) {
   return function (right, context) {
@@ -486,8 +489,11 @@ function unaryOp(op) {
 }
 
 for (i in POB) {
-    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary)
+    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary) {
         POU[i] = unaryOp(i);
+        POU[i].matches = POB[i].matches;
+        POU[i].matchPrecendence = POB[i].matchPrecendence;
+    }
 }
 
 Puma.pseudoclasses = {
