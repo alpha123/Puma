@@ -1,5 +1,7 @@
 **0 Regexes**
+
 **0 Try-catch blocks**
+
 **0 Browser sniffing**
 
 
