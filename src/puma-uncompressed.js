@@ -1,3 +1,5 @@
+(function () {
+
 function Puma(selector, context) {
     var pc = Puma.parseCache, tree;
     if (pc[selector])
@@ -297,8 +299,6 @@ Puma.Parser = {
     }
 };
 
-(function () {
-
 function arrayIndexOf(array, elem) {
     if (array.indexOf)
         return array.indexOf(elem);
@@ -583,5 +583,7 @@ Puma.pseudoclasses = {
 
 Puma.pseudoelements = {
 };
+
+window.Puma = Puma;
 
 })();
