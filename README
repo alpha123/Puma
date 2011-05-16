@@ -4,44 +4,26 @@
 
 
 
-Puma is a new, speedy, CSS selector engine. Lightweight and designed to be easily dropped into any library, Puma supports all CSS2 and most CSS3 selectors.
+Puma is a new, speedy, CSS selector engine. Extremely lightweight and easily droppable into any library, Puma supports all CSS2 and most CSS3 selectors.
 
 It's syntax is just like Sizzle and friends:
 
 Puma(selector[, DOMElement])
 
 
-It's also very extensible: you can add new pseudoclasses or operators any time you want. Let's say we want to define the @ operator to be like the # operator except matching name instead of id:
-
-Puma.operators.unary['@'] = function (elem, right) {
-    return elem.getAttribute('name') == right.value;
-};
-
-For it to be usable in a context like 'div@myname' we need to also add it as a binary operator:
-
-Puma.operators.binary['@'] = function (elem, left, right) {
-    return elem.tagName.toUpperCase() == left.value.toUpperCase() &&
-           elem.getAttribute('name') == right.value;
-};
-
-Then you can use it just like the built-in operators:
-
-Puma('@myname'); // Matches all elements with a name of 'myname'.
-Puma('span@myname'); // Matches all span elements with a name of 'myname'.
-Puma('div.myclass@myname'); // Uh-oh! This won't work -- you need to do some
-                            // extra work for more complex expressions to work.
-
-To fix the problem with the last one, you will have to evaluate the left side of the tree.
+It's also very extensible: you can add new pseudoclasses or operators any time you want. Let's say we want to define the @ operator for matching the rel attribute:
 
 Puma.operators.binary['@'] = function (left, right, context) {
     return Puma.arrayFilter(left.evaluate(context), function (e) {
-        return e.getAttribute('name') == right.value;
+        return e.getAttribute('rel') == right.value;
     });
 };
 
-Puma.operators.binary['@'].noIter = true;
+This code simply evaluates the left side of the parse tree and reduces it to the elements with the specified value for the rel attribute. You can use it like 'div@stuff' or 'img[src^="/assets/images"]@myrel.theClass'.
 
-Now selectors like 'div.myclass1.myclass2[attr=value]@myname' work just fine.
+Since it also adds it as a unary operator be default (as long as there is no unary operator that already exists with that name), you can do '@therel:nth-child(even)' also. If you don't want it to be automatically added, simply do:
+
+Puma.operators.binary['@'].noUnary = true;
 
 
 More documentation on extension will be available sometime when I get around to it (hopefully within the next few years :-P).

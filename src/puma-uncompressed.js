@@ -33,16 +33,7 @@ Puma.AST = {
         this.left = left;
         this.right = right;
         this.evaluate = function (context) {
-            var op = Puma.operators.binary[value], matches = [], elems, i;
-            if (op.noIter)
-                return op(this.left, this.right, context);
-            elems = context.getElementsByTagName('*');
-            i = elems.length;
-            while (i--) {
-                if(op(elems[i], this.left, this.right, context))
-                    matches.push(elems[i]);
-            }
-            return matches;
+            return Puma.operators.binary[value](this.left, this.right, context);
         };
     },
     
@@ -50,16 +41,7 @@ Puma.AST = {
         this.value = value;
         this.right = right;
         this.evaluate = function (context) {
-            var op = Puma.operators.unary[value], matches = [], elems, i;
-            if (op.noIter)
-                return op(this.right, context);
-            elems = context.getElementsByTagName('*');
-            i = elems.length;
-            while (i--) {
-                if(op(elems[i], this.right, context))
-                    matches.push(elems[i]);
-            }
-            return matches;
+            return Puma.operators.unary[value](this.right, context);
         };
     }
 };
@@ -176,8 +158,8 @@ Puma.Parser = {
             else if (type == 'op') {
                 if (!symbols[val])
                     tok.error('Unknown operator ' + val);
-                if (Puma.operators.unary[val] && (!prevTok ||
-                (prevTok.type == 'op' && prevTok.value != ']' && prevTok.value != ')')))
+                if (POU[val] && (!prevTok || (prevTok.type == 'op' &&
+                prevTok.value != ']' && prevTok.value != ')')))
                     node = new Puma.AST.UnOp(val, tok.right);
                 else
                     node = new Puma.AST.BinOp(val, tok.right, tok.left);
@@ -263,7 +245,7 @@ Puma.Parser = {
         
         for (i in POB) {
             if (POB.hasOwnProperty(i))
-                infix(i, POB[i].precedence || 10;
+                infix(i, POB[i].precedence || 10);
         }
         
         infix('[', 20, function (left) {
@@ -497,10 +479,6 @@ POB['~'].precendence = 8;
 
 POB[','].precendence = 5;
 
-POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
-POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
-POB['::'].noIter = POB['['].noIter = true;
-
 function unaryOp(op) {
   return function (right, context) {
     return POB[op](new Puma.AST.Tag('*'), right, context);
@@ -508,10 +486,8 @@ function unaryOp(op) {
 }
 
 for (i in POB) {
-    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary) {
+    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary)
         POU[i] = unaryOp(i);
-        POU[i].noIter = POB[i].noIter;
-    }
 }
 
 Puma.pseudoclasses = {
