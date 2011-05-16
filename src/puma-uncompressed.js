@@ -324,35 +324,6 @@ Puma.arrayFilter = arrayFilter;
 
 Puma.operators = {
     unary: {
-        '#': function (right, context) {
-            if (context.getElementById) {
-                var elem = context.getElementById(right.value);
-                return elem ? [elem] : [];
-            }
-            return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return e.id == right.value;
-            });
-        },
-        
-        '.': function (right, context) {
-            if (context.getElementsByClassName)
-                return [].slice.call(context.getElementsByClassName(right.value));
-            return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return arrayIndexOf(e.className.split(' '), right.value) >= 0;
-            });
-        },
-        
-        ':': function (right, context) {
-            return Puma.operators.binary[':'](new Puma.AST.Tag('*'), right, context);
-        },
-        
-        '::': function (right, context) {
-            return Puma.operators.binary['::'](new Puma.AST.Tag('*'), right, context);
-        },
-        
-        '[': function (right, context) {
-            return Puma.operators.binary['['](new Puma.AST.Tag('*'), right, context);
-        }
     },
     
     binary: {
@@ -515,7 +486,7 @@ Puma.operators = {
     }
 };
 
-var POB = Puma.operators.binary, POU = Puma.operators.unary;
+var POB = Puma.operators.binary, POU = Puma.operators.unary, i;
 
 POB['>'].precendence = POB[' '].precendence = POB['+'].precendence =
 POB['~'].precendence = 8;
@@ -524,8 +495,20 @@ POB[','].precendence = 5;
 
 POB['#'].noIter = POB['.'].noIter = POB[','].noIter = POB['>'].noIter =
 POB[' '].noIter = POB['+'].noIter = POB['~'].noIter = POB[':'].noIter =
-POB['::'].noIter = POB['['].noIter = POU['#'].noIter = POU['.'].noIter =
-POU[':'].noIter = POU['::'].noIter = POU['['].noIter = true;
+POB['::'].noIter = POB['['].noIter = true;
+
+function unaryOp(op) {
+  return function (right, context) {
+    return POB[op](new Puma.AST.Tag('*'), right, context);
+  }
+}
+
+for (i in POB) {
+    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary) {
+        POU[i] = unaryOp(i);
+        POU[i].noIter = POB[i].noIter;
+    }
+}
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
