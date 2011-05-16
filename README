@@ -1,6 +1,6 @@
-0 Regexes
-0 Try-catch blocks
-0 Browser stiffing
+### 0 Regexes
+### 0 Try-catch blocks
+### 0 Browser stiffing
 
 
 
@@ -20,10 +20,5 @@ Puma.operators.binary['@'] = function (left, right, context) {
 };
 
 This code simply evaluates the left side of the parse tree and reduces it to the elements with the specified value for the rel attribute. You can use it like 'div@stuff' or 'img[src^="/assets/images"]@myrel.theClass'.
-
-Since it also adds it as a unary operator be default (as long as there is no unary operator that already exists with that name), you can do '@therel:nth-child(even)' also. If you don't want it to be automatically added, simply do:
-
-Puma.operators.binary['@'].noUnary = true;
-
 
 More documentation on extension will be available sometime when I get around to it (hopefully within the next few years :-P).
