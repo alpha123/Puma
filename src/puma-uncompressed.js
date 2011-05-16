@@ -238,9 +238,7 @@ Puma.Parser = {
             };
             return sym;
         }
-
-        symbol(']');
-        symbol(')');
+        
         symbol('(end)');
         symbol('(ident)');
         
@@ -253,6 +251,8 @@ Puma.Parser = {
         for (i in POB) {
             if (POB.hasOwnProperty(i)) {
                 (function (op) {
+                    if (op.matches)
+                        symbol(op.matches);
                     infix(i, op.precedence || 10, function (left) {
                         this.left = left;
                         this.arity = 'binary';
@@ -266,6 +266,8 @@ Puma.Parser = {
         for (i in POU) {
             if (POU.hasOwnProperty(i)) {
                 (function (op) {
+                    if (op.matches)
+                        symbol(op.matches);
                     prefix(i, function () {
                         this.arity = 'unary';
                         ledNud(this, op);
