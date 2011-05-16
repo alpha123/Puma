@@ -154,7 +154,7 @@ Puma.Scanner = {
 Puma.Parser = {
     parse: function (selector) {
         var symbols = {}, token, tokens = Puma.Scanner.tokenize(selector),
-        tokenNum = 0, result, i;
+        tokenNum = 0, result, POB = Puma.operators.binary, POU = Puma.operators.unary, i;
         
         function advance(id) {
             if (id && token.id != id)
@@ -261,8 +261,10 @@ Puma.Parser = {
         symbol('(end)');
         symbol('(ident)');
         
-        for (i in Puma.operators.binary)
-            infix(i, Puma.operators.binary[i].precendence || 10);
+        for (i in POB) {
+            if (POB.hasOwnProperty(i))
+                infix(i, POB[i].precedence || 10;
+        }
         
         infix('[', 20, function (left) {
             this.left = left;
@@ -280,8 +282,10 @@ Puma.Parser = {
             return this;
         });
         
-        for (i in Puma.operators.unary)
-            prefix(i);
+        for (i in POU) {
+            if (POU.hasOwnProperty(i))
+                prefix(i);
+        }
         
         prefix('[', function () {
             this.right = expression(0);
