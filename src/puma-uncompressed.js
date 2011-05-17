@@ -53,7 +53,7 @@ Puma.AST = {
 
 Puma.Scanner = {
     tokenize: function (selector) {
-        var current = selector.charAt(0), i = 0, from, str, oper,
+        var current = selector.charAt(0), i = 0, from, str, oper, old,
         length = selector.length, tokens = [], chars = '0123456789-_';
     
         function makeToken(type, value) {
@@ -75,7 +75,7 @@ Puma.Scanner = {
             from = i;
             if (current == ' ') {
                 current = selector.charAt(++i);
-                var old = selector.charAt(i - 2);
+                old = selector.charAt(i - 2);
                 if ((test(current) || current == '*' || Puma.operators.unary[current]) &&
                 (test(old) || old == '*'))
                     tokens.push(makeToken('op', ' '));
@@ -206,7 +206,7 @@ Puma.Parser = {
                         this.error('Undefined. ' + id);
                     },
             
-                    led: function (left) {
+                    led: function () {
                         this.error('Missing operator.');
                     },
                     
