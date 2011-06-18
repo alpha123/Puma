@@ -1,4 +1,4 @@
-(function () {
+(function (window) {
 
 function Puma(selector, context) {
     var pc = Puma.parseCache, tree;
@@ -475,7 +475,7 @@ Puma.operators = {
     }
 };
 
-var POB = Puma.operators.binary, POU = Puma.operators.unary, i;
+var POB = Puma.operators.binary, POU = Puma.operators.unary, i, old = window.Puma;
 
 POB['('].precedence = POB['['].precedence = 20;
 POB['>'].precendence = POB[' '].precendence = POB['+'].precendence = POB['~'].precendence = 8;
@@ -572,6 +572,11 @@ Puma.pseudoclasses = {
 Puma.pseudoelements = {
 };
 
+Puma.noConflict = function () {
+    window.Puma = old;
+    return Puma;
+};
+
 window.Puma = Puma;
 
-})();
+})(this);
