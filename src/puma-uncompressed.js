@@ -81,36 +81,36 @@ Puma.Scanner = {
                     tokens.push(makeToken('op', ' '));
             }
             else if (test(current)) {
-                str = [current];
+                str = current;
                 ++i;
                 while (1) {
                     current = selector.charAt(i);
                     if (test(current)) {
-                        str.push(current);
+                        str += current;
                         ++i;
                     }
                     else
                         break;
                 }
-                tokens.push(makeToken('ident', str.join('')));
+                tokens.push(makeToken('ident', str));
             }
             else if (current == '"' || current == "'") {
-                str = [];
+                str = '';
                 var quote = current;
                 while (1) {
                     current = selector.charAt(++i);
                     if (current < ' ')
-                        makeToken('ident', str.join('')).error('Bad string');
+                        makeToken('ident', str).error('Bad string');
                     if (current == quote)
                         break;
                     if (current == '\\') {
                         if (++i >= length)
-                            makeToken('ident', str.join('')).error('Bad string');
+                            makeToken('ident', str).error('Bad string');
                         current = '\\' + selector.charAt(i);
                     }
-                    str.push(current);
+                    str += current;
                 }
-                tokens.push(makeToken('ident', str.join('')));
+                tokens.push(makeToken('ident', str));
                 current = selector.charAt(++i);
             }
             else if (current == '*' && selector.charAt(i + 1) != '=') {
@@ -118,15 +118,15 @@ Puma.Scanner = {
                 current = selector.charAt(++i);
             }
             else {
-                oper = [current];
+                oper = current;
                 current = selector.charAt(++i);
                 var old = selector.charAt(i - 1);
                 if ((current == '*' || !test(current)) && current != ' ' && old != '[' &&
                 old != ']' && old != '(' && old != ')' && current != '"' && current != "'") {
-                    oper.push(current);
+                    oper += current;
                     current = selector.charAt(++i);
                 }
-                tokens.push(makeToken('op', oper.join('')));
+                tokens.push(makeToken('op', oper));
             }
         }
         return tokens;
