@@ -1,4 +1,4 @@
-(function (window) {
+(function (window, undefined) {
 
 function Puma(selector, context) {
     var pc = Puma.parseCache, tree;
@@ -9,7 +9,7 @@ function Puma(selector, context) {
         pc[selector] = tree;
         pc.push(selector);
         if (pc.length > Puma.parseCacheSize)
-            pc[pc.shift()] = void 0;
+            pc[pc.shift()] = undefined;
     }
     return tree.evaluate(context || document);
 }
