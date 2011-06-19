@@ -54,7 +54,7 @@ Puma.AST = {
 Puma.Scanner = {
     tokenize: function (selector) {
         var current = selector.charAt(0), i = 0, from, str, oper, old,
-        length = selector.length, tokens = [], chars = '0123456789-_';
+        tokens = [], chars = '0123456789-_';
     
         function makeToken(type, value) {
             return {
@@ -104,7 +104,7 @@ Puma.Scanner = {
                     if (current == quote)
                         break;
                     if (current == '\\') {
-                        if (++i >= length)
+                        if (++i >= selector.length)
                             makeToken('ident', str).error('Bad string');
                         current = '\\' + selector.charAt(i);
                     }
