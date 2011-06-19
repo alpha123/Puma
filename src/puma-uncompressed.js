@@ -68,8 +68,8 @@ Puma.Scanner = {
             };
         }
         function test(character) {
-            return ((character >= 'a' && character <= 'z') || (character >= 'A'
-            && character <= 'Z') || chars.indexOf(character) >= 0) && character;
+            return ((character > '`' && character < '{') || (character > '@'
+            && character < '[') || chars.indexOf(character) >= 0) && character;
         }
         while (current) {
             from = i;
