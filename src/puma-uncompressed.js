@@ -1,21 +1,8 @@
 (function (window, undefined) {
 
 function Puma(selector, context) {
-    var pc = Puma.parseCache, tree;
-    if (pc[selector])
-        tree = pc[selector];
-    else {
-        tree = Puma.Parser.parse(selector);
-        pc[selector] = tree;
-        pc.push(selector);
-        if (pc.length > Puma.parseCacheSize)
-            pc[pc.shift()] = undefined;
-    }
-    return tree.evaluate(context || document);
+    return Puma.Parser.parse(selector).evaluate(context || document);
 }
-
-Puma.parseCache = [];
-Puma.parseCacheSize = 100;
 
 function arrayIndexOf(array, elem) {
     if (array.indexOf)
@@ -149,7 +136,11 @@ Puma.Scanner = {
 // http://javascript.crockford.com/tdop/tdop.html
 
 Puma.Parser = {
+    cache: [],
+    cacheSize: 50,
     parse: function (selector) {
+        if (this.cache[selector])
+            return this.cache[selector];
         var symbols = {}, token, tokens = Puma.Scanner.tokenize(selector),
         tokenNum = 0, result, POB = Puma.operators.binary, POU = Puma.operators.unary, i;
         
@@ -207,7 +198,7 @@ Puma.Parser = {
             bindingPower = bindingPower || 0;
             var sym = symbols[id];
             if (sym) {
-                if (bindingPower >= sym.lbp)
+                if (bindingPower > sym.lbp)
                     sym.lbp = bindingPower;
             }
             else {
@@ -296,6 +287,10 @@ Puma.Parser = {
         advance('(end)');
         result.query = selector;
         result.tokens = tokens;
+        this.cache.push(selector);
+        this.cache[selector] = result;
+        if (this.cache.length > this.cacheSize)
+            this.cache[this.cache.shift()] = undefined;
         return result;
     }
 };
@@ -345,7 +340,7 @@ Puma.operators = {
         '>': function (left, right, context) {
             var leftNodes = left.evaluate(context);
             return arrayFilter(right.evaluate(context), function (e) {
-                return arrayIndexOf(leftNodes, e.parentNode) >= 0;
+                return arrayIndexOf(leftNodes, e.parentNode) > -1;
             });
         },
         
@@ -354,7 +349,7 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var parent = e;
                 while (parent = parent.parentNode) {
-                    if (arrayIndexOf(leftNodes, parent) >= 0)
+                    if (arrayIndexOf(leftNodes, parent) > -1)
                         return true;
                 }
                 return false;
@@ -366,8 +361,8 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var sibling = e;
                 while (sibling = sibling.previousSibling) {
-                    if (sibling.nodeType == 1)
-                        return arrayIndexOf(leftNodes, sibling) >= 0;
+                    if (sibling.nodeType < 2)
+                        return arrayIndexOf(leftNodes, sibling) > -1;
                 }
             });
         },
@@ -377,7 +372,7 @@ Puma.operators = {
             return arrayFilter(right.evaluate(context), function (e) {
                 var sibling = e;
                 while (sibling = sibling.previousSibling) {
-                    if (sibling.nodeType == 1 && arrayIndexOf(leftNodes, sibling) >= 0)
+                    if (sibling.nodeType < 2 && arrayIndexOf(leftNodes, sibling) > -1)
                         return true;
                 }
                 return false;
@@ -398,11 +393,11 @@ Puma.operators = {
         '(': function () { },
         
         '::': function (left, right, context) {
-            var pseudos = Puma.pseudoelements, leftNodes, i = 0, l, result = [],
-            pseudoelement;
+            var pseudos = Puma.pseudoelements, leftNodes = left.evaluate(context),
+            i = 0, l, result = [], pseudoelement;
             if (!pseudos[right.value])
                 right.error('Unknown pseudoelement ' + right.value);
-            for (leftNodes = left.evaluate(context), l = leftNodes.length; i < l; ++i) {
+            for (l = leftNodes.length; i < l; ++i) {
                 pseudoelement = pseudos[right.value](leftNodes[i]);
                 if (pseudoelement != null)
                     result.push.apply(result, pseudoelement);
@@ -450,7 +445,7 @@ Puma.operators = {
         '*=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
                 var attr = e.getAttribute(left.value);
-                return attr && attr.indexOf(right.value) >= 0;
+                return attr && attr.indexOf(right.value) > -1;
             });
         },
         
@@ -459,7 +454,7 @@ Puma.operators = {
             if (parts.length == 1)
               parts = [0, parts[0], ''];
             return arrayFilter(nodes, function (e) {
-                return (new RegExp(parts[1], parts[2])).test(e.getAttribute(left.value));
+                return RegExp(parts[1], parts[2]).test(e.getAttribute(left.value));
             });
         }
     }
@@ -491,7 +486,7 @@ for (i in POB) {
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
         var innerText = elem.innerText || elem.textContent || '';
-        return innerText.indexOf(text.value) >= 0;
+        return innerText.indexOf(text.value) > -1;
     },
     
     
@@ -499,7 +494,7 @@ Puma.pseudoclasses = {
         var parts = regex.value.split('/');
         if (parts.length == 1)
             parts = [0, parts[0], ''];
-        return (new RegExp(parts[1], parts[2])).test(elem.innerText || elem.textContent || '');
+        return RegExp(parts[1], parts[2]).test(elem.innerText || elem.textContent || '');
     },
     
     'not': function (elem, expr, context) {
