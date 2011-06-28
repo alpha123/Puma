@@ -17,6 +17,29 @@ function Puma(selector, context) {
 Puma.parseCache = [];
 Puma.parseCacheSize = 100;
 
+function arrayIndexOf(array, elem) {
+    if (array.indexOf)
+        return array.indexOf(elem);
+    for (var i = 0, l = array.length; i < l; ++i) {
+        if (array[i] === elem)
+            return i;
+    }
+    return -1;
+}
+
+function arrayFilter(array, func) {
+    if (array.filter)
+        return array.filter(func);
+    for (var newArray = [], i = 0, l = array.length; i < l; ++i) {
+        if (func(array[i], i))
+            newArray.push(array[i]);
+    }
+    return newArray;
+}
+
+Puma.arrayIndexOf = arrayIndexOf;
+Puma.arrayFilter = arrayFilter;
+
 Puma.AST = {
     Tag: function (value) {
         this.value = value;
@@ -24,7 +47,7 @@ Puma.AST = {
             var result = context.getElementsByTagName(value);
             if (result instanceof Object)
                 return [].slice.call(result);
-            return Puma.arrayFilter(result, function () { return true; });
+            return arrayFilter(result, function () { return true; });
         };
     },
     
@@ -46,15 +69,12 @@ Puma.AST = {
     }
 };
 
-// A scanner and top-down operator precendence parser for CSS selectors.
-// Technique and code inspired by Douglas Crockford's article
-// "Top Down Operator Precendence"
-// http://javascript.crockford.com/tdop/tdop.html
+var old = window.Puma, POB, POU, i, ident = 'ident', op = 'op';
 
 Puma.Scanner = {
     tokenize: function (selector) {
-        var current = selector.charAt(0), i = 0, from, str, oper, old,
-        tokens = [], chars = '0123456789-_';
+        var current = selector.charAt(0), i = 0, from = 0, prev, next, quote,
+        acc, tested, single = '()[]', tokens = [];
     
         function makeToken(type, value) {
             return {
@@ -67,71 +87,66 @@ Puma.Scanner = {
                 }
             };
         }
-        function test(character) {
-            return ((character > '`' && character < '{') || (character > '@'
-            && character < '[') || chars.indexOf(character) >= 0) && character;
+        
+        function test(c) {
+            return c && (
+              (c > '/' && c < ':') || // 0-9
+              (c > '@' && c < '[') || // A-Z
+              (c > '`' && c < '{') || // a-z
+              c == '-' || c == '_'
+            );
         }
+        
         while (current) {
-            from = i;
-            if (current == ' ') {
-                current = selector.charAt(++i);
-                old = selector.charAt(i - 2);
-                if ((test(current) || current == '*' || Puma.operators.unary[current]) &&
-                (test(old) || old == '*'))
-                    tokens.push(makeToken('op', ' '));
-            }
-            else if (test(current)) {
-                str = current;
-                ++i;
-                while (1) {
-                    current = selector.charAt(i);
-                    if (test(current)) {
-                        str += current;
-                        ++i;
-                    }
-                    else
-                        break;
-                }
-                tokens.push(makeToken('ident', str));
-            }
-            else if (current == '"' || current == "'") {
-                str = '';
-                var quote = current;
-                while (1) {
+            if (current == '"' || current == "'" || current == '`') {
+                acc = '';
+                quote = current;
+                while (true) {
                     current = selector.charAt(++i);
-                    if (current < ' ')
-                        makeToken('ident', str).error('Bad string');
                     if (current == quote)
                         break;
-                    if (current == '\\') {
-                        if (++i >= selector.length)
-                            makeToken('ident', str).error('Bad string');
-                        current = '\\' + selector.charAt(i);
-                    }
-                    str += current;
+                    else if (!current)
+                        makeToken(ident, acc).error('Unterminated string');
+                    acc += current;
                 }
-                tokens.push(makeToken('ident', str));
-                current = selector.charAt(++i);
+                tokens.push(makeToken(quote == '`' ? op : ident, acc));
             }
-            else if (current == '*' && selector.charAt(i + 1) != '=') {
-                tokens.push(makeToken('ident', current));
-                current = selector.charAt(++i);
+            else if (current == ' ') {
+                prev = selector.charAt(i - 1);
+                next = selector.charAt(i + 1);
+                if ((test(prev) || prev == '"' || prev == "'") && (
+                    (test(next) || next == '"' || next == "'") || selector.charAt(i + 2) != ' '))
+                    tokens.push(makeToken(op, current));
             }
+            else if (current == '*') {
+                if ((next = selector.charAt(++i)) == '=')
+                    tokens.push(makeToken(op, current + next));
+                else
+                    tokens.push(makeToken(ident, current));
+            }
+            else if (single.indexOf(current) > -1)
+                tokens.push(makeToken(op, current));
             else {
-                oper = current;
-                current = selector.charAt(++i);
-                var old = selector.charAt(i - 1);
-                if ((current == '*' || !test(current)) && current != ' ' && old != '[' &&
-                old != ']' && old != '(' && old != ')' && current != '"' && current != "'") {
-                    oper += current;
+                acc = '';
+                tested = test(current);
+                while (current && current != ' ' && ((tested && test(current)) ||
+                (!tested && !test(current)))) {
+                    acc += current;
                     current = selector.charAt(++i);
                 }
-                tokens.push(makeToken('op', oper));
+                --i;
+                tokens.push(makeToken(tested ? ident : op, acc));
             }
+            current = selector.charAt(++i);
         }
         return tokens;
     }
 };
+
+// A top-down operator precendence parser for CSS selectors.
+// Technique and code inspired by Douglas Crockford's article
+// "Top Down Operator Precendence"
+// http://javascript.crockford.com/tdop/tdop.html
 
 Puma.Parser = {
     parse: function (selector) {
@@ -147,18 +162,17 @@ Puma.Parser = {
             }
             var tok = tokens[tokenNum++], val = tok.value, type = tok.type,
             prevTok = tokens[tokenNum - 2], node, i;
-            if (type == 'ident') {
+            if (type == ident) {
                 node = new Puma.AST.Tag(val);
                 node.nud = function () {
                     return this;
                 };
-                node.led = null;
                 node.lbp = 0;
             }
-            else if (type == 'op') {
+            else if (type == op) {
                 if (!symbols[val])
                     tok.error('Unknown operator ' + val);
-                if (POU[val] && (!prevTok || (prevTok.type == 'op' &&
+                if (POU[val] && (!prevTok || (prevTok.type == op &&
                 prevTok.value != ']' && prevTok.value != ')')))
                     node = new Puma.AST.UnOp(val, tok.right);
                 else
@@ -286,29 +300,6 @@ Puma.Parser = {
     }
 };
 
-function arrayIndexOf(array, elem) {
-    if (array.indexOf)
-        return array.indexOf(elem);
-    for (var i = 0, l = array.length; i < l; ++i) {
-        if (array[i] === elem)
-            return i;
-    }
-    return -1;
-}
-
-function arrayFilter(array, func) {
-    if (array.filter)
-        return array.filter(func);
-    for (var newArray = [], i = 0, l = array.length; i < l; ++i) {
-        if (func(array[i], i))
-            newArray.push(array[i]);
-    }
-    return newArray;
-}
-
-Puma.arrayIndexOf = arrayIndexOf;
-Puma.arrayFilter = arrayFilter;
-
 Puma.operators = {
     unary: {
     },
@@ -318,13 +309,13 @@ Puma.operators = {
             var leftNodes = left.evaluate(context), elem;
             if (context.getElementById) {
                 elem = context.getElementById(right.value);
-                if (arrayIndexOf(leftNodes, elem) >= 0)
+                if (arrayIndexOf(leftNodes, elem) > -1)
                     return [elem];
                 else
                     return [];
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return e.id == right.value && arrayIndexOf(leftNodes, e) >= 0;
+                return e.id == right.value && arrayIndexOf(leftNodes, e) > -1;
             });
         },
         
@@ -333,19 +324,18 @@ Puma.operators = {
             if (context.getElementsByClassName) {
                 return arrayFilter(context.getElementsByClassName(right.value),
                 function (e) {
-                    return arrayIndexOf(leftNodes, e) >= 0;
+                    return arrayIndexOf(leftNodes, e) > -1;
                 });
             }
             return arrayFilter(context.getElementsByTagName('*'), function (e) {
-                return arrayIndexOf(e.className.split(' '), right.value) >= 0 &&
-                arrayIndexOf(leftNodes, e) >= 0;
+                return arrayIndexOf(e.className.split(' '), right.value) > -1 &&
+                arrayIndexOf(leftNodes, e) > -1;
             });
         },
         
         ',': function (left, right, context) {
-            for (var leftNodes = left.evaluate(context),
-            rightNodes = right.evaluate(context), i = 0, l = rightNodes.length;
-            i < l; ++i) {
+            for (var leftNodes = left.evaluate(context), rightNodes = right.evaluate(context),
+            i = 0, l = rightNodes.length; i < l; ++i) {
                if (arrayIndexOf(leftNodes, rightNodes[i]) < 0)
                     leftNodes.push(rightNodes[i]);
             }
@@ -475,11 +465,11 @@ Puma.operators = {
     }
 };
 
-var POB = Puma.operators.binary, POU = Puma.operators.unary, i, old = window.Puma;
+POB = Puma.operators.binary, POU = Puma.operators.unary;
 
 POB['('].precedence = POB['['].precedence = 20;
-POB['>'].precendence = POB[' '].precendence = POB['+'].precendence = POB['~'].precendence = 8;
-POB[','].precendence = 5;
+POB['>'].precedence = POB[' '].precedence = POB['+'].precedence = POB['~'].precedence = 8;
+POB[','].precedence = 1;
 POB['('].matches = ')';
 POB['['].matches = ']';
 POB['('].matchPrecedence = POB['['].matchPrecedence = 0;
@@ -487,7 +477,7 @@ POB['('].matchPrecedence = POB['['].matchPrecedence = 0;
 function unaryOp(op) {
   return function (right, context) {
     return POB[op](new Puma.AST.Tag('*'), right, context);
-  }
+  };
 }
 
 for (i in POB) {
