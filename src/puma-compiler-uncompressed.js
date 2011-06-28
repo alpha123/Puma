@@ -2,7 +2,7 @@
 
 Puma.Compiler = {
     cache: [],
-    cacheSize: 10,
+    cacheSize: 30,
     
     compiled: {
         'unary#': 'return [c.getElementById("~v")]',
