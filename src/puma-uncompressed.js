@@ -1,7 +1,11 @@
 (function (window, undefined) {
 
 function Puma(selector, context) {
-    return Puma.Parser.parse(selector).evaluate(context || document);
+    context = context || document;
+    var tree = Puma.Parser.parse(selector);
+    if (Puma.Compiler && context == document && Puma.Compiler.canCompile(tree))
+        return Puma.Compiler.compile(tree)(context);
+    return tree.evaluate(context);
 }
 
 function arrayIndexOf(array, elem) {
@@ -24,8 +28,8 @@ function arrayFilter(array, func) {
     return newArray;
 }
 
-Puma.arrayIndexOf = arrayIndexOf;
-Puma.arrayFilter = arrayFilter;
+Puma.i = Puma.arrayIndexOf = arrayIndexOf;
+Puma.f = Puma.arrayFilter = arrayFilter;
 
 Puma.AST = {
     Tag: function (value) {
