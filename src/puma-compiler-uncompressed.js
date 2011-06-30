@@ -3,9 +3,11 @@
 Puma.Compiler = {
     cache: [],
     cacheSize: 30,
+    can: [],
+    canSize: 100,
     
     compiled: {
-        'unary#': 'return [c.getElementById("~v")]',
+        'unary#': 'return[c.getElementById("~v")]',
         'unary.': document.getElementsByClassName ? 'return[].slice.call(c.getElementsByClassName("~v"))' :
           'return Puma.f(c.getElementsByTagName("*"),function(e){return Puma.i(e.className.split(" "),"~v")>-1})',
         'binary#': 'var l=~l;return Puma.f(c.getElementsByTagName("*"),function(e){return e.id=="~v"&&Puma.i(l,e)>-1})',
@@ -16,10 +18,17 @@ Puma.Compiler = {
     },
     
     canCompile: function (tree) {
+        if (this.can[tree.query] != undefined)
+            return this.can[tree.query];
         if (tree instanceof Puma.AST.Tag)
             return true;
-        return !!this.compiled[tree.arity + tree.value] && (!tree.left || this.canCompile(tree.left)) &&
+        var can = !!this.compiled[tree.arity + tree.value] && (!tree.left || this.canCompile(tree.left)) &&
         this.canCompile(tree.right);
+        this.can.push(tree.query);
+        this.can[tree.query] = can;
+        if (this.can.length > this.canSize)
+            this.can[this.can.shift()] = undefined;
+        return can;
     },
     
     compile: function (tree, noFn) {
