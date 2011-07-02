@@ -3,7 +3,7 @@
 function Puma(selector, context) {
     context = context || document;
     var tree = Puma.Parser.parse(selector);
-    if (Puma.Compiler && context == document && Puma.Compiler.canCompile(tree))
+    if (Puma.Compiler && context.getElementById && Puma.Compiler.canCompile(tree))
         return Puma.Compiler.compile(tree)(context);
     return tree.evaluate(context);
 }
