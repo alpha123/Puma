@@ -1,9 +1,10 @@
 (function (Puma, document, undefined) {
 
 function compileBranch(branch) {
+    var compiled = Puma.Compiler.compile(branch, true);
     if (branch.arity == 'binary')
-        return '(function(){' + Puma.Compiler.compile(branch, true).replace('#r', 'return') + '})()';
-    return Puma.Compiler.compile(branch, true).replace('#r', '');
+        return '(function(){' + compiled.replace('#r', 'return') + '})()';
+    return compiled.replace('#r', '');
 }
 
 var byClass = document.getElementsByClassName;
@@ -39,8 +40,15 @@ Puma.Compiler = {
               'var l=' + left + ';#r Puma.f(c.getElementsByTagName("*"),function(e){return Puma.i(e.className.split(" "),"' +
               value + '")>-1&&Puma.i(l,e)>-1})'
         },
-        'binary ': function (value, left, right) {
-           return 'var l=' + left + ';#r Puma.f(' + right + ',function(e){var p=e;while(p=p.parentNode)if(Puma.i(l,p)>-1)return 1;return 0})'
+        'binary ': function (value, left, right, leftBranch, rightBranch) {
+            if (leftBranch.arity != 'binary' && document.body instanceof Object) {
+                var str = 'for(var l=' + left + ',i=0,j=l.length,n=[];i<j;)n.push.apply(n,n.slice.call(l[i++].';
+                if (rightBranch.arity == 'ident')
+                    return str + 'getElementsByTagName("' + value + '")));#r n';
+                else if (rightBranch.arity == 'unary' && rightBranch.value == '.' && byClass)
+                    return str + 'getElementsByClassName("' + rightBranch.right.value + '")));#r n';
+            }
+            return 'var l=' + left + ';#r Puma.f(' + right + ',function(e){var p=e;while(p=p.parentNode)if(Puma.i(l,p)>-1)return 1;return 0})'
         }
     },
     
@@ -65,7 +73,7 @@ Puma.Compiler = {
         if (tree.arity == 'ident')
             fn = this.compiled['ident'](tree.value);
         else if (tree.arity == 'unary')
-            fn = this.compiled['unary' + tree.value](tree.right.value)
+            fn = this.compiled['unary' + tree.value](tree.right.value, tree.right);
         else
             fn = this.compiled['binary' + tree.value](tree.right.value, compileBranch(tree.left),
               compileBranch(tree.right), tree.left, tree.right);
