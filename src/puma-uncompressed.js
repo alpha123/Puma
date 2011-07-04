@@ -515,43 +515,26 @@ Puma.pseudoclasses = {
     },
     
     'nth-child': function (elem, expr) {
-        var n = expr.value;
-        if (n == 'n')
+        var value = expr.value, a, b;
+        if (value == 'n')
             return true;
-        if (n == 'odd')
-            return arrayIndexOf(elem.parentNode.children, elem) % 2 == 0;
-        if (n == 'even')
-            return arrayIndexOf(elem.parentNode.children, elem) % 2 == 1;
-        if (!expr.nthChildCache) {
-            if (n.length == 1 && n != '+') {
-                expr.nthChildCache = function (e) {
-                    return arrayIndexOf(e.parentNode.children, e) == n - 1;
-                };
-            }
-            else if (n == '+') {
-                expr.nthChildCache = function (e) {
-                    for (var idx = arrayIndexOf(e.parentNode.children, e),
-                    x = parseInt(expr.right.value) - 1,
-                    y = expr.left.value.length > 1 ? parseInt(expr.left.value.length) : 0,
-                    i = 0, l = e.parentNode.children.length; i < l; ++i) {
-                        if (idx == i * y + x)
-                            return true;
-                    }
-                    return false;
-                };
-            }
-            else {
-                expr.nthChildCache = function (e) {
-                    for (var idx = arrayIndexOf(e.parentNode.children, e) + 1,
-                    x = parseInt(n), i = 0, l = e.parentNode.children.length; i < l; ++i) {
-                        if (idx == i * x)
-                            return true;
-                    }
-                    return false;
-                };
-            }
+        if (value == 'odd') {
+            a = 2;
+            b = 1;
         }
-        return expr.nthChildCache(elem);
+        else if (value == 'even') {
+            a = 2;
+            b = 0;
+        }
+        else if (value != '+') {
+            a = parseInt(value) || 1;
+            b = 0;
+        }
+        else {
+            a = parseInt(expr.left.value) || 1;
+            b = +expr.right.value || 0;
+        }
+        return (arrayIndexOf(elem.parentNode.children, elem) + 1 - b) % a == 0;
     }
 };
 
