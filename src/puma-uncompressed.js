@@ -257,34 +257,32 @@ Puma.Parser = {
                 advance(op.matches);
         }
         
-        for (i in POB) {
-            if (POB.hasOwnProperty(i)) {
-                (function (op) {
-                    if (op.matches)
-                        symbol(op.matches);
-                    infix(i, op.precedence || 10, function (left) {
-                        this.left = left;
-                        this.arity = 'binary';
-                        ledNud(this, op);
-                        return this;
-                    });
-                })(POB[i]);
+        function addSymbols(obj, add) {
+            for (i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    if (obj[i].matches)
+                        symbol(obj[i].matches);
+                    add(i, obj[i]);
+                }
             }
         }
         
-        for (i in POU) {
-            if (POU.hasOwnProperty(i)) {
-                (function (op) {
-                    if (op.matches)
-                        symbol(op.matches);
-                    prefix(i, function () {
-                        this.arity = 'unary';
-                        ledNud(this, op);
-                        return this;
-                    });
-                })(POU[i]);
-            }
-        }
+        addSymbols(POB, function (id, op) {
+            infix(id, op.precedence || 10, function (left) {
+                this.left = left;
+                this.arity = 'binary';
+                ledNud(this, op);
+                return this;
+            });
+        });
+        
+        addSymbols(POU, function (id, op) {
+            prefix(id, function () {
+                this.arity = 'unary';
+                ledNud(this, op);
+                return this;
+            });
+        });
         
         advance();
         result = expression(0);
@@ -480,7 +478,7 @@ function unaryOp(op) {
 }
 
 for (i in POB) {
-    if (POB.hasOwnProperty(i) && !POU[i] && !POB[i].noUnary) {
+    if (POB.hasOwnProperty(i) && !POU[i]) {
         POU[i] = unaryOp(i);
         POU[i].matches = POB[i].matches;
         POU[i].matchPrecendence = POB[i].matchPrecendence;
@@ -489,8 +487,7 @@ for (i in POB) {
 
 Puma.pseudoclasses = {
     'contains': function (elem, text) {
-        var innerText = elem.innerText || elem.textContent || '';
-        return innerText.indexOf(text.value) > -1;
+        return (elem.innerText || elem.textContent || '').indexOf(text.value) > -1;
     },
     
     
