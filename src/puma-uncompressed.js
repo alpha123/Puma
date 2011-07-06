@@ -9,8 +9,8 @@ function Puma(selector, context) {
 }
 
 function arrayIndexOf(array, elem) {
-    if (array.indexOf)
-        return array.indexOf(elem);
+    if ([].indexOf)
+        return [].indexOf.call(array, elem);
     for (var i = 0, l = array.length; i < l; ++i) {
         if (array[i] === elem)
             return i;
@@ -19,8 +19,8 @@ function arrayIndexOf(array, elem) {
 }
 
 function arrayFilter(array, func) {
-    if (array.filter)
-        return array.filter(func);
+    if ([].filter)
+        return [].filter.call(array, func);
     for (var newArray = [], i = 0, l = array.length; i < l; ++i) {
         if (func(array[i], i))
             newArray.push(array[i]);
