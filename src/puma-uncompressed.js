@@ -388,7 +388,7 @@ Puma.operators = {
             return arrayFilter(left.evaluate(context), function (e) {
                 if (right.value == '(')
                     return pseudos[right.left.value](e, right.right, context);
-                return pseudos[right.value](e);
+                return pseudos[right.value](e, context);
             });
         },
         
@@ -489,7 +489,6 @@ Puma.pseudoclasses = {
     'contains': function (elem, text) {
         return (elem.innerText || elem.textContent || '').indexOf(text.value) > -1;
     },
-    
     
     'matches': function (elem, regex) {
         var parts = regex.value.split('/');
