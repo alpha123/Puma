@@ -28,8 +28,23 @@ function arrayFilter(array, func) {
     return newArray;
 }
 
+function elementSort(array) {
+    array.sort(function (a, b) {
+        if (a.compareDocumentPosition)
+            return a.compareDocumentPosition(b) & 2 ? 1 : a == b ? 0 : -1;
+        return a.sourceIndex - b.sourceIndex;
+    });
+    for (var i = 0, l = array.length; i < l;) {
+        if (array[i] == array[i - 1])
+            array.splice(i, 1);
+        else
+            ++i;
+    }
+}
+
 Puma.i = Puma.arrayIndexOf = arrayIndexOf;
 Puma.f = Puma.arrayFilter = arrayFilter;
+Puma.s = Puma.elementSort = elementSort;
 
 Puma.AST = {
     Tag: function (value) {
@@ -331,12 +346,10 @@ Puma.operators = {
         },
         
         ',': function (left, right, context) {
-            for (var leftNodes = left.evaluate(context), rightNodes = right.evaluate(context),
-            i = 0, l = rightNodes.length; i < l; ++i) {
-               if (arrayIndexOf(leftNodes, rightNodes[i]) < 0)
-                    leftNodes.push(rightNodes[i]);
-            }
-            return leftNodes;
+            var nodes = left.evaluate(context);
+            nodes.push.apply(nodes, right.evaluate(context));
+            elementSort(nodes);
+            return nodes;
         },
         
         '>': function (left, right, context) {
