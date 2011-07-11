@@ -8,6 +8,11 @@ function Puma(selector, context) {
     return tree.evaluate(context);
 }
 
+var old = window.Puma, POB, POU, i, ident = 'ident', op = 'op', needsFixing = {
+    'class': 'className',
+    'for': 'htmlFor'
+};
+
 function arrayIndexOf(array, elem) {
     if ([].indexOf)
         return [].indexOf.call(array, elem);
@@ -42,9 +47,16 @@ function elementSort(array) {
     }
 }
 
+function getAttribute(elem, attr) {
+    if (needsFixing[attr])
+        return elem[needsFixing[attr]];
+    return elem.getAttribute(attr);
+}
+
 Puma.i = Puma.arrayIndexOf = arrayIndexOf;
 Puma.f = Puma.arrayFilter = arrayFilter;
-Puma.s = Puma.elementSort = elementSort;
+Puma.g = Puma.getAttribute = getAttribute;
+Puma.needsFixing = needsFixing;
 
 Puma.AST = {
     Tag: function (value) {
@@ -68,8 +80,6 @@ Puma.AST = {
         };
     }
 };
-
-var old = window.Puma, POB, POU, i, ident = 'ident', op = 'op';
 
 Puma.Scanner = {
     tokenize: function (selector) {
@@ -418,39 +428,39 @@ Puma.operators = {
                 right.right);
             rightNodes = right.evaluate(context);
             return arrayFilter(leftNodes, function (e) {
-                return e.hasAttribute(right.value);
+                return getAttribute(e, right.value) != undefined;
             });
         },
         
         '=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
-                return e.getAttribute(left.value) == right.value;
+                return getAttribute(e, left.value) == right.value;
             });
         },
         
         '!=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
-                return e.getAttribute(left.value) != right.value;
+                return getAttribute(e, left.value) != right.value;
             });
         },
         
         '^=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
+                var attr = getAttribute(e, left.value);
                 return attr && attr.indexOf(right.value) == 0;
             });
         },
         
         '$=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
+                var attr = getAttribute(e, left.value);
                 return attr && attr.lastIndexOf(right.value) == attr.length - right.value.length;
             });
         },
         
         '*=': function (nodes, left, right) {
             return arrayFilter(nodes, function (e) {
-                var attr = e.getAttribute(left.value);
+                var attr = getAttribute(e, left.value);
                 return attr && attr.indexOf(right.value) > -1;
             });
         },
@@ -460,7 +470,7 @@ Puma.operators = {
             if (parts.length == 1)
               parts = [0, parts[0], ''];
             return arrayFilter(nodes, function (e) {
-                return RegExp(parts[1], parts[2]).test(e.getAttribute(left.value));
+                return RegExp(parts[1], parts[2]).test(getAttribute(e, left.value));
             });
         }
     }
