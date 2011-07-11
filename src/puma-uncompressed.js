@@ -127,10 +127,12 @@ Puma.Scanner = {
                     tokens.push(makeToken(op, current));
             }
             else if (current == '*') {
-                if ((next = selector.charAt(i + 1)) == '=')
+                if ((next = selector.charAt(++i)) == '=')
                     tokens.push(makeToken(op, current + next));
-                else
+                else {
                     tokens.push(makeToken(ident, current));
+                    --i;
+                }
             }
             else if (single.indexOf(current) > -1)
                 tokens.push(makeToken(op, current));
