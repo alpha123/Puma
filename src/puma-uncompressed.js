@@ -57,20 +57,14 @@ Puma.AST = {
         };
     },
     
-    BinOp: function (value, left, right) {
+    Op: function (value, arity, left, right) {
         this.value = value;
+        this.arity = arity;
         this.left = left;
         this.right = right;
         this.evaluate = function (context) {
-            return Puma.operators.binary[value](this.left, this.right, context);
-        };
-    },
-    
-    UnOp: function (value, right) {
-        this.value = value;
-        this.right = right;
-        this.evaluate = function (context) {
-            return Puma.operators.unary[value](this.right, context);
+            return Puma.operators[this.arity][value](this.left || [this.right, this.right = undefined][0],
+            this.right || context, context);
         };
     }
 };
@@ -88,9 +82,7 @@ Puma.Scanner = {
                 value: value,
                 from: from,
                 to: i,
-                error: function (message) {
-                    throw new Error(message);
-                }
+                error: Puma.Parser.Symbol.error
             };
         }
         
@@ -120,12 +112,12 @@ Puma.Scanner = {
             else if (current == ' ') {
                 prev = selector.charAt(i - 1);
                 next = selector.charAt(i + 1);
-                if ((test(prev) || prev == '"' || prev == "'") && (
-                    (test(next) || next == '"' || next == "'") || selector.charAt(i + 2) != ' '))
+                if ((test(prev) || prev == '"' || prev == "'" || prev == '`' || prev == '*') && (
+                    (test(next) || next == '"' || next == "'" || next == '`' || next == '*') || selector.charAt(i + 2) != ' '))
                     tokens.push(makeToken(op, current));
             }
             else if (current == '*') {
-                if ((next = selector.charAt(++i)) == '=')
+                if ((next = selector.charAt(i + 1)) == '=')
                     tokens.push(makeToken(op, current + next));
                 else
                     tokens.push(makeToken(ident, current));
@@ -135,7 +127,7 @@ Puma.Scanner = {
             else {
                 acc = '';
                 tested = test(current);
-                while (current && current != ' ' && ((tested && test(current)) ||
+                while (current && current != ' ' && current != '"' && current != "'" && current != '`' && ((tested && test(current)) ||
                 (!tested && !test(current)))) {
                     acc += current;
                     current = selector.charAt(++i);
@@ -157,21 +149,41 @@ Puma.Scanner = {
 Puma.Parser = {
     cache: [],
     cacheSize: 50,
+    
+    Symbol: {
+        error: function (message) {
+            throw new Error(message);
+        },
+        nud: function () {
+            this.error('Undefined.');
+        },
+        led: function () {
+            this.error('Missing operator.');
+        }
+    },
+    
+    // From http://javascript.crockford.com/prototypal.html
+    create: Object.create || function (obj) {
+        function F() { }
+        F.prototype = obj;
+        return new F();
+    },
+    
     parse: function (selector) {
         if (this.cache[selector])
             return this.cache[selector];
-        var symbols = {}, token, tokens = Puma.Scanner.tokenize(selector),
-        tokenNum = 0, result, POB = Puma.operators.binary, POU = Puma.operators.unary, i;
+        var symbols = {}, end = symbol('end'), token, tokens = Puma.Scanner.tokenize(selector),
+        tokenNum = 0, result, POU = Puma.operators['unary'], i;
+        symbols['end'] = undefined;
         
         function advance(id) {
-            if (id && token.id != id)
-                token.error('Expected ' + id + ', not ' + token.id);
+            if (id && token.value != id && id != end)
+                token.error('Expected ' + id + ', not ' + token.value);
             if (tokenNum >= tokens.length) {
-                token = symbols['(end)'];
+                token = end; // GCL...
                 return;
             }
-            var tok = tokens[tokenNum++], val = tok.value, type = tok.type,
-            prevTok = tokens[tokenNum - 2], node, i;
+            var tok = tokens[tokenNum++], val = tok.value, type = tok.type, node, i;
             if (type == ident) {
                 node = new Puma.AST.Tag(val);
                 node.nud = function () {
@@ -182,20 +194,15 @@ Puma.Parser = {
             else if (type == op) {
                 if (!symbols[val])
                     tok.error('Unknown operator ' + val);
-                if (POU[val] && (!prevTok || (prevTok.type == op &&
-                prevTok.value != ']' && prevTok.value != ')')))
-                    node = new Puma.AST.UnOp(val, tok.right);
-                else
-                    node = new Puma.AST.BinOp(val, tok.right, tok.left);
-                for (i in symbols[val])
-                    node[i] = symbols[val][i];
+                node = Puma.Parser.create(symbols[val]);
+                node.evaluate = new Puma.AST.Op(val).evaluate;
             }
             else
                 tok.error('Unexpected token ' + val);
             token = node;
             token.from = tok.from;
             token.to = tok.to;
-            token.value = token.id = val;
+            token.value = val;
             token.arity = type;
             token.error = tok.error;
             return token;
@@ -221,22 +228,9 @@ Puma.Parser = {
                     sym.lbp = bindingPower;
             }
             else {
-                sym = {
-                    error: function (message) {
-                        throw new Error(message);
-                    },
-                    
-                    nud: function () {
-                        this.error('Undefined. ' + id);
-                    },
-            
-                    led: function () {
-                        this.error('Missing operator.');
-                    },
-                    
-                    lbp: bindingPower
-                };
-                sym.id = sym.value = id;
+                sym = Puma.Parser.create(Puma.Parser.Symbol);
+                sym.value = id;
+                sym.lbp = bindingPower;
                 symbols[id] = sym;
             }
             return sym;
@@ -263,9 +257,6 @@ Puma.Parser = {
             return sym;
         }
         
-        symbol('(end)');
-        symbol('(ident)');
-        
         function ledNud(obj, op) {
             obj.right = expression(op.matches ? op.matchPrecedence || 0 : op.precedence || 10);
             if (op.matches)
@@ -282,7 +273,7 @@ Puma.Parser = {
             }
         }
         
-        addSymbols(POB, function (id, op) {
+        addSymbols(Puma.operators['binary'], function (id, op) {
             infix(id, op.precedence || 10, function (left) {
                 this.left = left;
                 this.arity = 'binary';
@@ -301,7 +292,7 @@ Puma.Parser = {
         
         advance();
         result = expression(0);
-        advance('(end)');
+        advance(end);
         result.query = selector;
         result.tokens = tokens;
         this.cache.push(selector);
@@ -313,10 +304,10 @@ Puma.Parser = {
 };
 
 Puma.operators = {
-    unary: {
+    'unary': {
     },
     
-    binary: {
+    'binary': {
         '#': function (left, right, context) {
             var leftNodes = left.evaluate(context), elem;
             if (context.getElementById) {
@@ -475,7 +466,7 @@ Puma.operators = {
     }
 };
 
-POB = Puma.operators.binary, POU = Puma.operators.unary;
+POB = Puma.operators['binary'], POU = Puma.operators['unary']; // The things I do for GCL...
 
 POB['('].precedence = POB['['].precedence = 20;
 POB['>'].precedence = POB[' '].precedence = POB['+'].precedence = POB['~'].precedence = 8;
