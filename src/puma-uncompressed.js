@@ -39,11 +39,9 @@ function elementSort(array) {
             return a.compareDocumentPosition(b) & 2 ? 1 : a == b ? 0 : -1;
         return a.sourceIndex - b.sourceIndex;
     });
-    for (var i = 0, l = array.length; i < l;) {
+    for (var i = 1, l = array.length; i < l; ++i) {
         if (array[i] == array[i - 1])
             array.splice(i, 1);
-        else
-            ++i;
     }
 }
 

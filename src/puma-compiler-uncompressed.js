@@ -1,7 +1,7 @@
 (function (Puma, document, undefined) {
 
 function compileBranch(branch) {
-    var compiled = Puma.Compiler.compile(branch, true);
+    var compiled = this.compile(branch, true); // Use "this" to allow for extensibility (see the Puma Matcher)
     if (branch.arity == 'binary')
         return '(function(){' + compiled.replace('#r', 'return') + '})()';
     return compiled.replace('#r', '');
@@ -57,7 +57,7 @@ Puma.Compiler = {
             return this.can[tree.query];
         if (tree.arity == 'ident')
             return true;
-        var can = this.compiled[tree.arity + tree.value] && (!tree.left ||
+        var can = !!this.compiled[tree.arity + tree.value] && (!tree.left ||
         this.canCompile(tree.left)) && this.canCompile(tree.right);
         this.can.push(tree.query);
         this.can[tree.query] = can;
@@ -75,8 +75,8 @@ Puma.Compiler = {
         else if (tree.arity == 'unary')
             fn = this.compiled['unary' + tree.value](tree.right.value, tree.right);
         else
-            fn = this.compiled['binary' + tree.value](tree.right.value, compileBranch(tree.left),
-              compileBranch(tree.right), tree.left, tree.right);
+            fn = this.compiled['binary' + tree.value](tree.right.value, compileBranch.call(this, tree.left),
+              compileBranch.call(this, tree.right), tree.left, tree.right);
         func = noFn ? fn : Function('c', fn.replace('#r', 'return'));
         if (!noFn) {
             this.cache.push(tree.query);
