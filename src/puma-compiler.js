@@ -9,6 +9,12 @@ function compileBranch(branch) {
 
 var byClass = document.getElementsByClassName;
 
+Puma.t = function (arrayLike) { // This is faster than [].slice.call - see http://jsperf.com/arguments-slice-vs-loop/2
+    for (var i = 0, l = arrayLike.length, array = Array(l); i < l; ++i)
+        array[i] = arrayLike[i];
+    return array;
+};
+
 Puma.Compiler = {
     cache: [],
     cacheSize: 30,
@@ -18,12 +24,12 @@ Puma.Compiler = {
     compiled: {
         'ident': function (value) {
             if (document.body instanceof Object) // Can't check earlier because the DOM might not be loaded
-                return '#r[].slice.call(c.getElementsByTagName("' + value + '"))';
+                return '#r P.t(c.getElementsByTagName("' + value + '"))';
             return '#r P.f(c.getElementsByTagName("' + value + '"),function(){return 1})';
         },
         'unary#': function (value) { return '#r[c.getElementById("' + value + '")]'; },
         'unary.': function (value) {
-            return byClass ? '#r[].slice.call(c.getElementsByClassName("' + value + '"))' :
+            return byClass ? '#r P.t(c.getElementsByClassName("' + value + '"))' :
             '#r P.f(c.getElementsByTagName("*"),function(e){return P.i(e.className.split(" "),"' + value + '")>-1})';
         },
         'binary#': function (value, left, _, leftBranch) {
@@ -32,9 +38,10 @@ Puma.Compiler = {
             return 'var l=' + left + ';#r P.f(c.getElementsByTagName("*"),function(e){return e.id=="' + value + '"&&P.i(l,e)>-1})';
         },
         'binary.': function (value, left, _, leftBranch) {
-            if (leftBranch.arity == 'ident' && byClass)
+            if (leftBranch.arity == 'ident' && byClass) {
                 return '#r P.f(c.getElementsByClassName("' + value +
                   '"),function(e){return e.tagName.toUpperCase()=="' + leftBranch.value.toUpperCase() + '"})';
+            }
             return byClass ?
               'var l=' + left + ';#r P.f(c.getElementsByClassName("' + value + '"),function(e){return P.i(l,e)>-1})' :
               'var l=' + left + ';#r P.f(c.getElementsByTagName("*"),function(e){return P.i(e.className.split(" "),"' +
@@ -55,10 +62,13 @@ Puma.Compiler = {
     canCompile: function (tree) {
         if (this.can[tree.query] != undefined)
             return this.can[tree.query];
-        if (tree.arity == 'ident')
-            return true;
-        var can = !!this.compiled[tree.arity + tree.value] && (!tree.left ||
-        this.canCompile(tree.left)) && this.canCompile(tree.right);
+        function check(tree, compiled) {
+            if (tree.arity == 'ident')
+                return true;
+            return !!compiled[tree.arity + tree.value] && (!tree.left ||
+            check(tree.left, compiled)) && check(tree.right, compiled);
+        }
+        var can = check(tree, this.compiled);
         this.can.push(tree.query);
         this.can[tree.query] = can;
         if (this.can.length > this.canSize)
@@ -86,7 +96,7 @@ Puma.Compiler = {
             if (this.cache.length > this.cacheSize)
                 this.cache[this.cache.shift()] = undefined;
         }
-        return wrapped;
+        return noFn ? func : wrapped;
     }
 };
 
