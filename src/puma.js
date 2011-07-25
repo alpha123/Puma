@@ -73,8 +73,9 @@ Puma.AST = {
         this.left = left;
         this.right = right;
         this.evaluate = function (context) {
-            return Puma.operators[this.arity][value](this.left || [this.right, this.right = undefined][0],
-            this.right || context, context);
+            if (this.arity == 'unary')
+                return Puma.operators['unary'][value](this.right, context);
+            return Puma.operators['binary'][value](this.left, this.right, context);
         };
     }
 };
@@ -184,13 +185,13 @@ Puma.Parser = {
             return this.cache[selector];
         var symbols = {}, end = symbol('end'), token, tokens = Puma.Scanner.tokenize(selector),
         tokenNum = 0, result, POU = Puma.operators['unary'], i;
-        symbols['end'] = undefined;
+        symbols['end'] = undefined; // GCL...
         
         function advance(id) {
             if (id && token.value != id && id != end)
                 token.error('Expected ' + id + ', not ' + token.value);
             if (tokenNum >= tokens.length) {
-                token = end; // GCL...
+                token = end;
                 return;
             }
             var tok = tokens[tokenNum++], val = tok.value, type = tok.type, node, i;
