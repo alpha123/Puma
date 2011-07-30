@@ -46,8 +46,12 @@ function elementSort(array) {
 }
 
 function getAttribute(elem, attr) {
-    if (needsFixing[attr])
-        return elem[needsFixing[attr]];
+    if (needsFixing[attr]) {
+        var value = elem[needsFixing[attr]];
+        if (attr == 'class' && !value)
+            value = null;
+        return value;
+    }
     return elem.getAttribute(attr);
 }
 
@@ -121,8 +125,9 @@ Puma.Scanner = {
             else if (current == ' ') {
                 prev = selector.charAt(i - 1);
                 next = selector.charAt(i + 1);
-                if ((test(prev) || prev == '"' || prev == "'" || prev == '`' || prev == '*') && (
-                    (test(next) || next == '"' || next == "'" || next == '`' || next == '*') || selector.charAt(i + 2) != ' '))
+                if ((test(prev) || prev == '"' || prev == "'" || prev == '`' || prev == '*' || single.indexOf(prev) > -1) && (
+                    (test(next) || next == '"' || next == "'" || next == '`' || next == '*' || single.indexOf(next) > -1) ||
+                    selector.charAt(i + 2) != ' '))
                     tokens.push(makeToken(op, current));
             }
             else if (current == '*') {
