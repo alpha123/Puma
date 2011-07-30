@@ -48,7 +48,7 @@ Puma.Compiler = {
               value + '")>-1&&P.i(l,e)>-1})'
         },
         'binary ': function (value, left, right, leftBranch, rightBranch) {
-            if (leftBranch.arity != 'binary' && document.body instanceof Object) {
+            if (leftBranch.arity == 'unary' && leftBranch.value == '#' && document.body instanceof Object) {
                 var str = 'for(var l=' + left + ',i=0,j=l.length,n=[];i<j;)n.push.apply(n,n.slice.call(l[i++].';
                 if (rightBranch.arity == 'ident')
                     return str + 'getElementsByTagName("' + value + '")));#r n';
