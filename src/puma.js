@@ -1,17 +1,38 @@
-(function (window, undefined) {
+(function (window, parseInt, undefined) {
 
 function Puma(selector, context) {
     context = context || document;
     var tree = Puma.Parser.parse(selector);
-    if (Puma.Compiler && context.getElementById && Puma.Compiler.canCompile(tree))
+    if (Puma.Compiler && context.nodeType == 9 && Puma.Compiler.canCompile(tree))
         return Puma.Compiler.compile(tree)(context);
     return tree.evaluate(context);
 }
 
-var old = window.Puma, POB, POU, i, ident = 'ident', op = 'op', needsFixing = {
-    'class': 'className',
-    'for': 'htmlFor'
+Puma.match = function (elem, selector) {
+    return arrayIndexOf(Puma(selector), elem) > -1; // Use the Puma matcher extension for a faster match() method
 };
+
+var old = window.Puma, POB, POU, i, ident = 'ident', op = 'op', fixAttrs = {
+    'class': 'className',
+    'for': 'htmlFor',
+    'style': function (elem) { return elem.style.cssText; }
+},
+// "Borrowed" from Jaguar (https://github.com/alpha123/Jaguar)... but I also wrote Jaguar :P
+features = (function (doc) {
+    var features = {}, test = doc.createElement('a');
+    
+    // IE lt 8 getElementById also gets an element with that name
+    test.name = 'test';
+    doc.firstChild ? doc.firstChild.appendChild(test) : doc.appendChild(test);
+    features.brokenId = !!doc.getElementById('test');
+    
+    // IE lt 9 includes comment nodes in the children array
+    test.innerHTML = '<!-- Three guys walk into a bar. *DONK* -->';
+    features.childrenHasComments = !!(test.children && test.children.length); // WebKit makes us check for test.children
+    
+    return features;
+})(document.implementation.createDocument ? document.implementation.createDocument(null, 'html', null) :
+new ActiveXObject('Microsoft.XMLDOM'));
 
 function arrayIndexOf(array, elem) {
     if ([].indexOf)
@@ -46,8 +67,8 @@ function elementSort(array) {
 }
 
 function getAttribute(elem, attr) {
-    if (needsFixing[attr]) {
-        var value = elem[needsFixing[attr]];
+    if (fixAttrs[attr]) {
+        var value = typeof fixAttrs[attr] == 'function' ? fixAttrs[attr](elem) : elem[fixAttrs[attr]];
         if (attr == 'class' && !value)
             value = null;
         return value;
@@ -55,10 +76,22 @@ function getAttribute(elem, attr) {
     return elem.getAttribute(attr);
 }
 
+function getChildren(elem) {
+    var kids = elem.nodeType == 9 ? elem.childNodes : elem.children;
+    if (elem.nodeType == 9 || features.childrenHasComments) {
+        kids = filter(kids, function (e) {
+            return e.nodeType == 1;
+        });
+    }
+    return kids;
+}
+
+Puma.features = features;
 Puma.i = Puma.arrayIndexOf = arrayIndexOf;
 Puma.f = Puma.arrayFilter = arrayFilter;
 Puma.g = Puma.getAttribute = getAttribute;
-Puma.needsFixing = needsFixing;
+Puma.getChildren = getChildren;
+Puma.fixAttrs = fixAttrs;
 
 Puma.AST = {
     Tag: function (value) {
@@ -326,7 +359,7 @@ Puma.operators = {
     'binary': {
         '#': function (left, right, context) {
             var leftNodes = left.evaluate(context), elem;
-            if (context.getElementById) {
+            if (context.getElementById && !features.brokenId) {
                 elem = context.getElementById(right.value);
                 if (arrayIndexOf(leftNodes, elem) > -1)
                     return [elem];
@@ -524,13 +557,12 @@ Puma.pseudoclasses = {
     },
     
     'first-child': function (elem) {
-        var children = elem.parentNode.children;
-        return children && elem == elem.parentNode.children[0];
+        return elem == getChildren(elem.parentNode)[0];
     },
     
     'last-child': function (elem) {
-        var children = elem.parentNode.children;
-        return children && elem == children[children.length - 1];
+        var kids = getChildren(elem.parentNode);
+        return elem == kids[kids.length - 1];
     },
     
     'nth-child': function (elem, expr) {
@@ -553,7 +585,7 @@ Puma.pseudoclasses = {
             a = parseInt(expr.left.value) || 1;
             b = +expr.right.value || 0;
         }
-        return (arrayIndexOf(elem.parentNode.children, elem) + 1 - b) % a == 0;
+        return (arrayIndexOf(getChildren(elem.parentNode), elem) + 1 - b) % a == 0;
     }
 };
 
@@ -567,4 +599,4 @@ Puma.noConflict = function () {
 
 window.Puma = Puma;
 
-})(this);
+})(this, parseInt);
